@@ -67,7 +67,7 @@ export const HospitalFinder: React.FC<HospitalFinderProps> = ({
               </div>
             </div>
           </div>
-          <div style={{ fontSize: '0.84rem', background: '#000', padding: '6px 14px', borderRadius: '20px', color: '#f43f5e', fontWeight: 700 }}>
+          <div style={{ fontSize: '0.84rem', background: '#ffffff', padding: '6px 14px', borderRadius: '20px', color: '#dc2626', fontWeight: 700 }}>
             {filteredHospitals.length} Emergency Centres Ready
           </div>
         </div>
@@ -76,7 +76,7 @@ export const HospitalFinder: React.FC<HospitalFinderProps> = ({
       {/* Filter Bar */}
       <div className="filter-bar">
         <div className="filter-group">
-          <Filter size={16} color="#06B6D4" />
+          <Filter size={16} color="#0b3a72" />
           <span style={{ fontSize: '0.84rem', fontWeight: 600 }}>Filter by:</span>
 
           {/* Specialty */}
@@ -112,7 +112,7 @@ export const HospitalFinder: React.FC<HospitalFinderProps> = ({
               type="checkbox"
               checked={cashlessOnly}
               onChange={(e) => setCashlessOnly(e.target.checked)}
-              style={{ accentColor: '#06B6D4', width: 16, height: 16 }}
+              style={{ accentColor: '#0b3a72', width: 16, height: 16 }}
             />
             <span>100% Cashless Network Only</span>
           </label>
@@ -143,11 +143,11 @@ export const HospitalFinder: React.FC<HospitalFinderProps> = ({
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px', margin: '10px 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <MapPin size={14} color="#06B6D4" />
+                    <MapPin size={14} color="#0b3a72" />
                     <strong>{h.distance_km} km</strong> ({h.locality})
                   </span>
                   <span>•</span>
-                  <span>Ambulance ETA: <strong style={{ color: '#38bdf8' }}>{h.estimated_ambulance_eta_mins} mins</strong></span>
+                  <span>Ambulance ETA: <strong style={{ color: '#1d4ed8' }}>{h.estimated_ambulance_eta_mins} mins</strong></span>
                 </div>
 
                 {/* Bed availability live pill */}
@@ -185,7 +185,7 @@ export const HospitalFinder: React.FC<HospitalFinderProps> = ({
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
                     <span style={{ color: 'var(--text-dim)' }}>Single Private AC:</span>
-                    <strong style={{ color: h.room_tariffs.single_private > (activePolicy?.room_limit.capped_amount_per_day || 5000) ? '#f59e0b' : '#34d399' }}>
+                    <strong style={{ color: h.room_tariffs.single_private > (activePolicy?.room_limit.capped_amount_per_day || 5000) ? '#f59e0b' : '#16a34a' }}>
                       ₹{h.room_tariffs.single_private.toLocaleString('en-IN')}/day
                     </strong>
                   </div>

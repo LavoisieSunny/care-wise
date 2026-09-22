@@ -48,78 +48,6 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
     return <div className="glass-panel" style={{ padding: '40px', textAlign: 'center' }}>Loading policy data...</div>;
   }
 
-  const renderConfidenceBadge = (confidence?: number) => {
-    const conf = confidence !== undefined ? confidence : 0.94;
-    const pct = Math.round(conf * 100);
-
-    if (conf >= 0.90) {
-      return (
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '4px',
-            background: 'rgba(16, 185, 129, 0.15)',
-            color: '#34d399',
-            border: '1px solid rgba(16, 185, 129, 0.4)',
-            borderRadius: '12px',
-            padding: '2px 8px',
-            fontSize: '0.68rem',
-            fontWeight: 700,
-          }}
-          title="High AI confidence with grounded document citation"
-        >
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981' }}></span>
-          {pct}% AI Confident
-        </span>
-      );
-    }
-
-    if (conf >= 0.70) {
-      return (
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '4px',
-            background: 'rgba(245, 158, 11, 0.15)',
-            color: '#fbbf24',
-            border: '1px solid rgba(245, 158, 11, 0.4)',
-            borderRadius: '12px',
-            padding: '2px 8px',
-            fontSize: '0.68rem',
-            fontWeight: 700,
-          }}
-          title="Moderate confidence - review extracted clause"
-        >
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b' }}></span>
-          {pct}% Moderate
-        </span>
-      );
-    }
-
-    return (
-      <span
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-          background: 'rgba(239, 68, 68, 0.15)',
-          color: '#f87171',
-          border: '1px solid rgba(239, 68, 68, 0.4)',
-          borderRadius: '12px',
-          padding: '2px 8px',
-          fontSize: '0.68rem',
-          fontWeight: 700,
-        }}
-        title="Low confidence - manual verification required"
-      >
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444' }}></span>
-        {pct}% Verify Terms
-      </span>
-    );
-  };
-
   const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
@@ -139,7 +67,7 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
       <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px' }}>
+            <span style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#1d4ed8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px' }}>
               GROUNDED RAG INDEXED
             </span>
             <span style={{ color: 'var(--text-dim)', fontSize: '0.82rem' }}>Policy ID: {policy.id}</span>
@@ -148,7 +76,7 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
             {policy.policy_name}
           </h2>
           <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-            Issued by <strong style={{ color: '#fff' }}>{policy.insurer_name}</strong> • {policy.policy_type}
+            Issued by <strong style={{ color: 'var(--text-main)' }}>{policy.insurer_name}</strong> • {policy.policy_type}
           </div>
         </div>
 
@@ -174,7 +102,7 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
             style={{ display: 'none' }}
             onChange={handleFileInput}
           />
-          <UploadCloud size={20} color="#06B6D4" style={{ margin: '0 auto 4px' }} />
+          <UploadCloud size={20} color="#0b3a72" style={{ margin: '0 auto 4px' }} />
           <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>
             {isUploading ? 'Extracting with PyMuPDF...' : 'Upload Any Policy PDF'}
           </div>
@@ -192,18 +120,20 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
             if (cit) onCitationClick(cit);
           }}
         >
-          <div className="metric-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>Sum Insured</span>
-              <FileCheck size={16} color="#06B6D4" />
-            </div>
-            {renderConfidenceBadge(policy.all_citations[0]?.confidence ?? 0.96)}
+          <div className="metric-label">
+            <span>Sum Insured</span>
+            <FileCheck size={16} color="#0b3a72" />
           </div>
           <div className="metric-value">₹{(policy.sum_insured / 100000).toFixed(1)} Lakhs</div>
           <div className="metric-sub">Base Inpatient Coverage</div>
           <div className="citation-badge">
             <Sparkles size={11} /> Page {policy.all_citations[0]?.page_number || 1} Verified
           </div>
+          {policy.all_citations[0]?.confidence !== undefined && policy.all_citations[0].confidence < 0.85 && (
+            <div className="confidence-chip-low">
+              <span>⚠️ Low confidence ({Math.round(policy.all_citations[0].confidence * 100)}%) - Please verify</span>
+            </div>
+          )}
         </div>
 
         {/* Metric 2: Room Rent Limit & Proportionate Risk */}
@@ -214,14 +144,11 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
             if (policy.room_limit.citation) onCitationClick(policy.room_limit.citation);
           }}
         >
-          <div className="metric-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>Room Rent Cap</span>
-              <ShieldAlert size={16} color={policy.room_limit.no_room_rent_capping ? '#10B981' : '#F59E0B'} />
-            </div>
-            {renderConfidenceBadge(policy.room_limit.citation?.confidence ?? (policy.room_limit.no_room_rent_capping ? 0.95 : 0.88))}
+          <div className="metric-label">
+            <span>Room Rent Cap</span>
+            <ShieldAlert size={16} color={policy.room_limit.no_room_rent_capping ? '#10B981' : '#F59E0B'} />
           </div>
-          <div className="metric-value" style={{ color: policy.room_limit.no_room_rent_capping ? '#34d399' : '#fbbf24' }}>
+          <div className="metric-value" style={{ color: policy.room_limit.no_room_rent_capping ? '#16a34a' : '#d97706' }}>
             {policy.room_limit.no_room_rent_capping
               ? 'No Capping'
               : `₹${(policy.room_limit.capped_amount_per_day || 5000).toLocaleString('en-IN')}/day`}
@@ -236,6 +163,11 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
               <Sparkles size={11} /> Page {policy.room_limit.citation.page_number} • Clause {policy.room_limit.citation.clause_id}
             </div>
           )}
+          {policy.room_limit.citation?.confidence !== undefined && policy.room_limit.citation.confidence < 0.85 && (
+            <div className="confidence-chip-low">
+              <span>⚠️ Low confidence - Review room terms</span>
+            </div>
+          )}
         </div>
 
         {/* Metric 3: Co-payment */}
@@ -245,12 +177,9 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
             if (policy.copay.citation) onCitationClick(policy.copay.citation);
           }}
         >
-          <div className="metric-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>Mandatory Co-Pay</span>
-              <HelpCircle size={16} color="#38BDF8" />
-            </div>
-            {renderConfidenceBadge(policy.copay.citation?.confidence ?? 0.92)}
+          <div className="metric-label">
+            <span>Mandatory Co-Pay</span>
+            <HelpCircle size={16} color="#1d4ed8" />
           </div>
           <div className="metric-value">
             {policy.copay.senior_citizen_percentage > 0
@@ -267,6 +196,11 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
               <Sparkles size={11} /> Page {policy.copay.citation.page_number} • Clause {policy.copay.citation.clause_id}
             </div>
           )}
+          {policy.copay.citation?.confidence !== undefined && policy.copay.citation.confidence < 0.85 && (
+            <div className="confidence-chip-low">
+              <span>⚠️ Low confidence - Check senior clause</span>
+            </div>
+          )}
         </div>
 
         {/* Metric 4: Pre-Auth Emergency Window */}
@@ -276,12 +210,9 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
             if (policy.pre_auth.citation) onCitationClick(policy.pre_auth.citation);
           }}
         >
-          <div className="metric-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>Emergency Notice</span>
-              <Clock size={16} color="#F43F5E" />
-            </div>
-            {renderConfidenceBadge(policy.pre_auth.citation?.confidence ?? 0.94)}
+          <div className="metric-label">
+            <span>Emergency Notice</span>
+            <Clock size={16} color="#F43F5E" />
           </div>
           <div className="metric-value">{policy.pre_auth.emergency_window_hours} Hours</div>
           <div className="metric-sub">Intimation window from admission</div>
@@ -298,14 +229,14 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
       <div className="doc-viewer-panel">
         <div className="doc-viewer-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <BookOpen size={18} color="#06B6D4" />
+            <BookOpen size={18} color="#0b3a72" />
             <span style={{ fontWeight: 700, fontSize: '0.94rem' }}>
               Policy Document Grounding Engine (Source Viewer)
             </span>
           </div>
           <div style={{ display: 'flex', gap: '8px', fontSize: '0.78rem' }}>
             <span style={{ color: 'var(--text-dim)' }}>
-              Showing verified clause: <strong style={{ color: '#fef08a' }}>{activeCitation?.clause_id || 'SEC-3.2.1'}</strong>
+              Showing verified clause: <strong style={{ color: '#92400e' }}>{activeCitation?.clause_id || 'SEC-3.2.1'}</strong>
             </span>
           </div>
         </div>
@@ -324,14 +255,14 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
           {/* Active Highlighted Clause */}
           <div className="clause-highlight-yellow">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <strong style={{ color: '#fef08a', fontSize: '0.92rem' }}>
+              <strong style={{ color: '#92400e', fontSize: '0.92rem' }}>
                 ⭐ {activeCitation?.clause_title || 'Clause 3.2.1: Room Rent and Proportionate Deduction'}
               </strong>
-              <span style={{ fontSize: '0.75rem', background: '#000', padding: '2px 8px', borderRadius: '4px', color: '#fde047' }}>
+              <span style={{ fontSize: '0.75rem', background: 'var(--color-primary)', padding: '2px 8px', borderRadius: '4px', color: '#fbbf24' }}>
                 PAGE {activeCitation?.page_number || 12} • {activeCitation?.clause_id || 'SEC-3.2.1'}
               </span>
             </div>
-            <p style={{ margin: 0, fontStyle: 'italic', color: '#fff' }}>
+            <p style={{ margin: 0, fontStyle: 'italic', color: '#78350f' }}>
               "{activeCitation?.exact_text || (policy.room_limit.citation?.exact_text ?? 'Room rent capped per policy terms.')}"
             </p>
           </div>

@@ -88,7 +88,7 @@ export const CostComparator: React.FC<CostComparatorProps> = ({
           {comparisonData && comparisonData.savings_vs_riskiest > 0 && (
             <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', padding: '6px 14px', borderRadius: '30px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Sparkles size={14} color="#10B981" />
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#34d399' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#16a34a' }}>
                 CareWise protects you from up to ₹{comparisonData.savings_vs_riskiest.toLocaleString('en-IN')} in surprise bills!
               </span>
             </div>
@@ -150,7 +150,7 @@ export const CostComparator: React.FC<CostComparatorProps> = ({
               max="80"
               value={patientAge}
               onChange={(e) => setPatientAge(Number(e.target.value))}
-              style={{ width: '100%', marginTop: '14px', accentColor: '#06B6D4' }}
+              style={{ width: '100%', marginTop: '14px', accentColor: '#0b3a72' }}
             />
           </div>
 
@@ -260,7 +260,7 @@ export const CostComparator: React.FC<CostComparatorProps> = ({
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
                           <span>{item.category}</span>
-                          <span style={{ color: item.caregiver_out_of_pocket > 0 ? '#f59e0b' : '#34d399' }}>
+                          <span style={{ color: item.caregiver_out_of_pocket > 0 ? '#f59e0b' : '#16a34a' }}>
                             {item.caregiver_out_of_pocket > 0
                               ? `+ ₹${item.caregiver_out_of_pocket.toLocaleString('en-IN')} OOP`
                               : '₹0 OOP'}

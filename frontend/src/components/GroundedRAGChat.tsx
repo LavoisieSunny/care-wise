@@ -13,7 +13,6 @@ export const GroundedRAGChat: React.FC<GroundedRAGChatProps> = ({
   policy,
   onCitationClick,
 }) => {
-  const [language, setLanguage] = useState<'en' | 'hi'>('en');
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'init-1',
@@ -27,13 +26,14 @@ export const GroundedRAGChat: React.FC<GroundedRAGChatProps> = ({
       ],
     },
   ]);
+  const [language, setLanguage] = useState<'en' | 'hi'>('en');
   const [inputQuery, setInputQuery] = useState('');
   const [loading, setLoading] = useState(false);
 
   const quickPromptsEn = [
     'Can I pick a Single Deluxe Room without losing money?',
     'What is the senior citizen co-pay percentage?',
-    'What is the emergency pre-auth deadline?',
+    'What is the emergency pre-auth deadline window?',
     'Are surgical consumables and gloves covered?',
   ];
 
@@ -84,9 +84,7 @@ export const GroundedRAGChat: React.FC<GroundedRAGChatProps> = ({
         {
           id: `asst-err-${Date.now()}`,
           sender: 'assistant',
-          text: language === 'hi'
-            ? 'RAG सेवा से कनेक्ट करने में असमर्थ। कृपया सुनिश्चित करें कि बैकएंड चल रहा है।'
-            : 'Unable to reach RAG service. Please ensure the backend is running.',
+          text: language === 'hi' ? 'RAG सेवा से कनेक्ट करने में असमर्थ। कृपया सुनिश्चित करें कि बैकएंड चल रहा है।' : 'Unable to reach RAG service. Please ensure the backend is running.',
           timestamp: 'Now',
         },
       ]);
@@ -98,7 +96,7 @@ export const GroundedRAGChat: React.FC<GroundedRAGChatProps> = ({
   return (
     <div className="rag-chat-panel">
       {/* Header */}
-      <div className="rag-chat-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="rag-chat-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--grad-cyan-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Bot size={16} color="#fff" />
@@ -107,45 +105,6 @@ export const GroundedRAGChat: React.FC<GroundedRAGChatProps> = ({
             <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>Caregiver Policy Assistant</div>
             <div style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)' }}>Zero Hallucination • Grounded with Citations</div>
           </div>
-        </div>
-
-        {/* Hindi/English Accessibility Language Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255, 255, 255, 0.04)', padding: '2px 4px', borderRadius: '14px', border: '1px solid var(--border-subtle)' }}>
-          <Globe size={13} color="#38BDF8" style={{ marginLeft: 3 }} />
-          <button
-            type="button"
-            onClick={() => setLanguage('en')}
-            style={{
-              background: language === 'en' ? 'var(--grad-cyan-blue)' : 'transparent',
-              color: language === 'en' ? '#fff' : 'var(--text-dim)',
-              border: 'none',
-              borderRadius: '10px',
-              padding: '2px 8px',
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
-            EN
-          </button>
-          <button
-            type="button"
-            onClick={() => setLanguage('hi')}
-            style={{
-              background: language === 'hi' ? 'var(--grad-cyan-blue)' : 'transparent',
-              color: language === 'hi' ? '#fff' : 'var(--text-dim)',
-              border: 'none',
-              borderRadius: '10px',
-              padding: '2px 8px',
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
-            हिंदी
-          </button>
         </div>
       </div>
 
@@ -164,10 +123,8 @@ export const GroundedRAGChat: React.FC<GroundedRAGChatProps> = ({
             {m.citations && m.citations.length > 0 && (
               <div style={{ marginTop: '10px' }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <BookOpen size={12} color="#06B6D4" />
-                  <span>
-                    {language === 'hi' ? 'सत्यापित उद्धरण (दस्तावेज़ में देखने के लिए क्लिक करें):' : 'VERIFIED CITATIONS (Click to view in document):'}
-                  </span>
+                  <BookOpen size={12} color="#0b3a72" />
+                  <span>VERIFIED CITATIONS (Click to view in document):</span>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {m.citations.map((c, i) => (
@@ -178,7 +135,7 @@ export const GroundedRAGChat: React.FC<GroundedRAGChatProps> = ({
                       title="Click to jump to highlighted page"
                     >
                       <Sparkles size={11} />
-                      <strong>{language === 'hi' ? `पृष्ठ ${c.page_number}` : `Page ${c.page_number}`}</strong> • {c.clause_id}
+                      <strong>Page {c.page_number}</strong> • {c.clause_id}
                     </div>
                   ))}
                 </div>
@@ -188,12 +145,12 @@ export const GroundedRAGChat: React.FC<GroundedRAGChatProps> = ({
             {/* Suggested Caregiver Actions */}
             {m.suggested_actions && m.suggested_actions.length > 0 && (
               <div style={{ marginTop: '10px', background: 'rgba(0,0,0,0.25)', padding: '8px 10px', borderRadius: '6px' }}>
-                <div style={{ fontSize: '0.72rem', color: '#67e8f9', fontWeight: 700, marginBottom: '4px' }}>
-                  {language === 'hi' ? 'अनुशंसित अगले कदम:' : 'RECOMMENDED NEXT ACTIONS:'}
+                <div style={{ fontSize: '0.72rem', color: '#1d4ed8', fontWeight: 700, marginBottom: '4px' }}>
+                  RECOMMENDED NEXT ACTIONS:
                 </div>
                 {m.suggested_actions.map((act, idx) => (
                   <div key={idx} style={{ fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '5px', margin: '2px 0' }}>
-                    <ChevronRight size={12} color="#06B6D4" />
+                    <ChevronRight size={12} color="#0b3a72" />
                     <span>{act}</span>
                   </div>
                 ))}
@@ -203,9 +160,7 @@ export const GroundedRAGChat: React.FC<GroundedRAGChatProps> = ({
         ))}
         {loading && (
           <div className="chat-bubble assistant" style={{ fontStyle: 'italic', opacity: 0.8 }}>
-            {language === 'hi'
-              ? 'पॉलिसी दस्तावेज़ों की जांच और उद्धरण सत्यापन प्रगति पर है...'
-              : 'Searching policy vector store and verifying clause citations...'}
+            Searching policy vector store and verifying clause citations...
           </div>
         )}
       </div>
@@ -224,11 +179,7 @@ export const GroundedRAGChat: React.FC<GroundedRAGChatProps> = ({
         <input
           type="text"
           className="chat-input"
-          placeholder={
-            language === 'hi'
-              ? 'पॉलिसी के बारे में कोई भी प्रश्न पूछें (उदा. कमरा किराया, को-पे, आईसीयू सीमा)...'
-              : 'Ask anything about policy coverage (e.g. ICU capping, room rent, co-pay)...'
-          }
+          placeholder="Ask anything about policy coverage (e.g. ICU capping, room rent, co-pay)..."
           value={inputQuery}
           onChange={(e) => setInputQuery(e.target.value)}
           onKeyDown={(e) => {

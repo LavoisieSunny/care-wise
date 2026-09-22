@@ -46,7 +46,7 @@ export const AutofillChoiceModal: React.FC<AutofillChoiceModalProps> = ({
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-          <div style={{ background: 'rgba(6, 182, 212, 0.15)', padding: '8px', borderRadius: '8px', color: '#06b6d4' }}>
+          <div style={{ background: 'rgba(6, 182, 212, 0.15)', padding: '8px', borderRadius: '8px', color: '#0b3a72' }}>
             <FileText size={20} />
           </div>
           <div>
@@ -54,12 +54,12 @@ export const AutofillChoiceModal: React.FC<AutofillChoiceModalProps> = ({
               Select Auto-Fill & Extraction Mode
             </h3>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '2px' }}>
-              Document: <strong style={{ color: '#fff' }}>{fileName}</strong> ({fileSizeKb} KB • {pagesProcessed} {pagesProcessed === 1 ? 'Page' : 'Pages'})
+              Document: <strong style={{ color: 'var(--text-main)' }}>{fileName}</strong> ({fileSizeKb} KB • {pagesProcessed} {pagesProcessed === 1 ? 'Page' : 'Pages'})
             </div>
           </div>
         </div>
 
-        <p style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: '1.5', margin: '14px 0 18px' }}>
+        <p style={{ fontSize: '0.82rem', color: '#334155', lineHeight: '1.5', margin: '14px 0 18px' }}>
           CareWise PyMuPDF text ingestion is complete. Choose how you would like AI to extract and structure policy schedules into your workbench:
         </p>
 
@@ -84,16 +84,16 @@ export const AutofillChoiceModal: React.FC<AutofillChoiceModalProps> = ({
             onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.4)')}
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#34d399', fontWeight: 800, fontSize: '0.92rem', marginBottom: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#16a34a', fontWeight: 800, fontSize: '0.92rem', marginBottom: '6px' }}>
                 <Zap size={16} />
                 <span>Quick Auto-Fill</span>
               </div>
-              <div style={{ fontSize: '0.76rem', color: '#94a3b8', lineHeight: '1.45' }}>
+              <div style={{ fontSize: '0.76rem', color: '#64748b', lineHeight: '1.45' }}>
                 Instant heuristic extraction for standard IRDAI formats. Immediately populates room rent, sum insured, and co-pay caps.
               </div>
             </div>
             
-            <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#34d399', fontWeight: 600 }}>
+            <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#16a34a', fontWeight: 600 }}>
               <Clock size={12} /> Instant (&lt; 0.5s)
             </div>
           </div>
@@ -114,23 +114,23 @@ export const AutofillChoiceModal: React.FC<AutofillChoiceModalProps> = ({
               position: 'relative',
               boxShadow: '0 0 15px rgba(6, 182, 212, 0.15)'
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#06b6d4')}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#0b3a72')}
             onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.5)')}
           >
-            <div style={{ position: 'absolute', top: '-10px', right: '12px', background: 'linear-gradient(90deg, #06b6d4, #2563eb)', color: '#fff', fontSize: '0.66rem', fontWeight: 800, padding: '2px 8px', borderRadius: '10px' }}>
+            <div style={{ position: 'absolute', top: '-10px', right: '12px', background: 'linear-gradient(90deg, #0b3a72, #2563eb)', color: '#fff', fontSize: '0.66rem', fontWeight: 800, padding: '2px 8px', borderRadius: '10px' }}>
               RECOMMENDED
             </div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#38bdf8', fontWeight: 800, fontSize: '0.92rem', marginBottom: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1d4ed8', fontWeight: 800, fontSize: '0.92rem', marginBottom: '6px' }}>
                 <BrainCircuit size={16} />
                 <span>AI Deep Extraction</span>
               </div>
-              <div style={{ fontSize: '0.76rem', color: '#94a3b8', lineHeight: '1.45' }}>
+              <div style={{ fontSize: '0.76rem', color: '#64748b', lineHeight: '1.45' }}>
                 Multi-page LLM semantic reasoning. Deep extraction of sub-limits, cross-page waiting periods, exclusions & exact page citations.
               </div>
             </div>
             
-            <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#38bdf8', fontWeight: 600 }}>
+            <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#1d4ed8', fontWeight: 600 }}>
               <Sparkles size={12} /> High-Precision Semantic Grounding
             </div>
           </div>
@@ -139,7 +139,7 @@ export const AutofillChoiceModal: React.FC<AutofillChoiceModalProps> = ({
         {/* Processing State if active */}
         {isDeepLoading && (
           <div style={{ background: 'rgba(6, 182, 212, 0.1)', border: '1px solid rgba(6, 182, 212, 0.3)', borderRadius: '8px', padding: '12px', marginBottom: '14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: '#67e8f9', fontWeight: 600 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: '#1d4ed8', fontWeight: 600 }}>
               <Sparkles size={16} className="spin" />
               <span>Running Deep LLM semantic extraction across {pagesProcessed} pages...</span>
             </div>

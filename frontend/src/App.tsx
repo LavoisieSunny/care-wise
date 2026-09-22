@@ -36,13 +36,13 @@ import 'react-pdf/dist/esm/Page/TextLayer.css';
 
 import { PolicyDetails, ClauseCitation } from './types/policy';
 import { HospitalCostAnalysis } from './types/calculator';
-import { ClaimDossierResponse } from './types/journey';
 import { getPolicies, uploadPolicyPDF, uploadPolicyDeep } from './api/policies';
 import { simulateCost } from './api/calculator';
 import { queryRAG } from './api/rag';
 import { generateDossier, getJourneyGuidance, DecisionGuidance, getDossierPdfUrl, notifyCaregiverWhatsApp } from './api/journey';
-import { AutofillChoiceModal } from './components/AutofillChoiceModal';
+import { ClaimDossierResponse } from './types/journey';
 import { JourneyTracker } from './components/JourneyTracker';
+import { AutofillChoiceModal } from './components/AutofillChoiceModal';
 
 // Set up pdfjs worker using standard URL bundler resolution
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -91,7 +91,7 @@ export const App: React.FC = () => {
   const [chatInput, setChatInput] = useState<string>('');
   const [chatLoading, setChatLoading] = useState<boolean>(false);
 
-  // Navigation and New Feature States
+  // View Mode, Language, and Dossier
   const [viewMode, setViewMode] = useState<'studio' | 'journey'>('studio');
   const [chatLanguage, setChatLanguage] = useState<'en' | 'hi'>('en');
   const [dossierData, setDossierData] = useState<ClaimDossierResponse | null>(null);
@@ -122,31 +122,6 @@ export const App: React.FC = () => {
     };
     init();
   }, []);
-
-  const renderConfidenceBadge = (confidence?: number) => {
-    const conf = confidence !== undefined ? confidence : 0.94;
-    const pct = Math.round(conf * 100);
-
-    if (conf >= 0.90) {
-      return (
-        <span style={{ fontSize: '0.66rem', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.35)', padding: '1px 6px', borderRadius: '8px', fontWeight: 700, marginLeft: '6px' }}>
-          {pct}% AI Confident
-        </span>
-      );
-    }
-    if (conf >= 0.70) {
-      return (
-        <span style={{ fontSize: '0.66rem', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.35)', padding: '1px 6px', borderRadius: '8px', fontWeight: 700, marginLeft: '6px' }}>
-          {pct}% Moderate
-        </span>
-      );
-    }
-    return (
-      <span style={{ fontSize: '0.66rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.35)', padding: '1px 6px', borderRadius: '8px', fontWeight: 700, marginLeft: '6px' }}>
-        {pct}% Verify Terms
-      </span>
-    );
-  };
 
   // Update cost simulation when policy, procedure, or room changes
   useEffect(() => {
@@ -294,7 +269,6 @@ export const App: React.FC = () => {
       const res = await queryRAG({
         policy_id: activePolicy.id,
         query: q,
-        language: chatLanguage,
       });
       const topCitation = res.citations.length > 0 ? res.citations[0] : undefined;
       setChatMessages(prev => [
@@ -312,9 +286,7 @@ export const App: React.FC = () => {
         ...prev,
         {
           sender: 'assistant',
-          text: chatLanguage === 'hi' 
-            ? 'पॉलिसी विवरण प्राप्त करने में असमर्थ। कृपया कनेक्शन की जांच करें।'
-            : 'Unable to query policy clauses at this moment. Please check server connection.',
+          text: chatLanguage === 'hi' ? 'पॉलिसी विवरण प्राप्त करने में असमर्थ। कृपया कनेक्शन की जांच करें।' : 'Unable to query policy clauses at this moment. Please check server connection.',
         }
       ]);
     } finally {
@@ -413,13 +385,13 @@ export const App: React.FC = () => {
             <svg className="brand-logo-icon" viewBox="0 0 100 100" fill="none">
               <defs>
                 <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#06B6D4" />
+                  <stop offset="0%" stopColor="#0b3a72" />
                   <stop offset="100%" stopColor="#2563EB" />
                 </linearGradient>
               </defs>
               <path d="M50 8 L85 22 C85 55 50 88 50 94 C50 88 15 55 15 22 Z" fill="#0F172A" stroke="url(#logoGrad)" strokeWidth="5" />
-              <rect x="44" y="32" width="12" height="32" rx="3" fill="#06B6D4" />
-              <rect x="34" y="42" width="32" height="12" rx="3" fill="#06B6D4" />
+              <rect x="44" y="32" width="12" height="32" rx="3" fill="#0b3a72" />
+              <rect x="34" y="42" width="32" height="12" rx="3" fill="#0b3a72" />
               <circle cx="50" cy="48" r="3.5" fill="#FFFFFF" />
             </svg>
             <div>
@@ -431,23 +403,22 @@ export const App: React.FC = () => {
           {/* Center / Right Tools */}
           <div className="header-tools">
             {/* View Mode Switcher: Studio vs Inpatient Journey Tracker */}
-            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', padding: '3px', border: '1px solid var(--border-subtle)', marginRight: '4px' }}>
+            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '8px', padding: '3px', border: '1px solid var(--border-subtle)', marginRight: '4px' }}>
               <button
                 className={`sample-pill-btn ${viewMode === 'studio' ? 'active' : ''}`}
-                style={{ borderRadius: '6px', fontSize: '0.74rem', padding: '5px 12px', background: viewMode === 'studio' ? '#06B6D4' : 'transparent', color: viewMode === 'studio' ? '#000' : '#94a3b8', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                style={{ borderRadius: '6px', fontSize: '0.74rem', padding: '5px 12px', background: viewMode === 'studio' ? '#0b3a72' : 'transparent', color: viewMode === 'studio' ? '#ffffff' : '#64748b', fontWeight: 700, border: 'none', cursor: 'pointer' }}
                 onClick={() => setViewMode('studio')}
               >
                 📋 Policy Grounding Studio
               </button>
               <button
                 className={`sample-pill-btn ${viewMode === 'journey' ? 'active' : ''}`}
-                style={{ borderRadius: '6px', fontSize: '0.74rem', padding: '5px 12px', background: viewMode === 'journey' ? '#06B6D4' : 'transparent', color: viewMode === 'journey' ? '#000' : '#94a3b8', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                style={{ borderRadius: '6px', fontSize: '0.74rem', padding: '5px 12px', background: viewMode === 'journey' ? '#0b3a72' : 'transparent', color: viewMode === 'journey' ? '#ffffff' : '#64748b', fontWeight: 700, border: 'none', cursor: 'pointer' }}
                 onClick={() => setViewMode('journey')}
               >
                 🏥 Inpatient Journey Tracker
               </button>
             </div>
-
             {/* The One Prominent Upload Button */}
             <button
               className="btn-upload-main"
@@ -460,7 +431,7 @@ export const App: React.FC = () => {
 
             {/* Non-blocking Header OCR Processing Badge (MACT Pattern) */}
             {isDeepLoading && (
-              <div style={{ background: 'rgba(6, 182, 212, 0.15)', border: '1px solid #06b6d4', color: '#67e8f9', padding: '4px 10px', borderRadius: '12px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ background: 'rgba(6, 182, 212, 0.15)', border: '1px solid #0b3a72', color: '#1d4ed8', padding: '4px 10px', borderRadius: '12px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Sparkles size={12} className="spin" />
                 <span>AI Deep Extraction processing in background...</span>
               </div>
@@ -525,18 +496,18 @@ export const App: React.FC = () => {
 
         {/* 4 Key Policy Metrics Quick Pills */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span className={`sample-metric-pill ${flashingIdx === 0 ? 'autofill-flash' : ''}`} style={{ fontSize: '0.76rem', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px' }}>
-            Sum Insured: <strong style={{ color: '#38bdf8' }}>₹{((activePolicy?.sum_insured || 500000) / 100000).toFixed(0)} Lakhs</strong>
+          <span className={`sample-metric-pill ${flashingIdx === 0 ? 'autofill-flash' : ''}`} style={{ fontSize: '0.76rem', background: 'rgba(15, 23, 42, 0.04)', padding: '2px 8px', borderRadius: '4px' }}>
+            Sum Insured: <strong style={{ color: '#1d4ed8' }}>₹{((activePolicy?.sum_insured || 500000) / 100000).toFixed(0)} Lakhs</strong>
           </span>
-          <span className={`sample-metric-pill ${flashingIdx === 1 ? 'autofill-flash' : ''}`} style={{ fontSize: '0.76rem', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px' }}>
-            Room Cap: <strong style={{ color: activePolicy?.room_limit.no_room_rent_capping ? '#34d399' : '#fbbf24' }}>
+          <span className={`sample-metric-pill ${flashingIdx === 1 ? 'autofill-flash' : ''}`} style={{ fontSize: '0.76rem', background: 'rgba(15, 23, 42, 0.04)', padding: '2px 8px', borderRadius: '4px' }}>
+            Room Cap: <strong style={{ color: activePolicy?.room_limit.no_room_rent_capping ? '#16a34a' : '#d97706' }}>
               {activePolicy?.room_limit.no_room_rent_capping ? 'No Cap' : `₹${activePolicy?.room_limit.capped_amount_per_day || 5000}/day`}
             </strong>
           </span>
-          <span className={`sample-metric-pill ${flashingIdx === 2 ? 'autofill-flash' : ''}`} style={{ fontSize: '0.76rem', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px' }}>
-            Co-Pay: <strong style={{ color: '#fff' }}>{activePolicy?.copay.senior_citizen_percentage || 0}%</strong>
+          <span className={`sample-metric-pill ${flashingIdx === 2 ? 'autofill-flash' : ''}`} style={{ fontSize: '0.76rem', background: 'rgba(15, 23, 42, 0.04)', padding: '2px 8px', borderRadius: '4px' }}>
+            Co-Pay: <strong style={{ color: 'var(--text-main)' }}>{activePolicy?.copay.senior_citizen_percentage || 0}%</strong>
           </span>
-          <span className={`sample-metric-pill ${flashingIdx === 3 ? 'autofill-flash' : ''}`} style={{ fontSize: '0.76rem', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px' }}>
+          <span className={`sample-metric-pill ${flashingIdx === 3 ? 'autofill-flash' : ''}`} style={{ fontSize: '0.76rem', background: 'rgba(15, 23, 42, 0.04)', padding: '2px 8px', borderRadius: '4px' }}>
             Pre-Auth: <strong style={{ color: '#f43f5e' }}>{activePolicy?.pre_auth.emergency_window_hours || 24}h Notice</strong>
           </span>
         </div>
@@ -546,12 +517,12 @@ export const App: React.FC = () => {
       {autofillBanner && (
         <div className="autofill-review-banner">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Sparkles size={16} color="#06B6D4" />
+            <Sparkles size={16} color="#0b3a72" />
             <span>{autofillBanner}</span>
           </div>
           <button 
             onClick={() => setAutofillBanner(null)}
-            style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex' }}
+            style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex' }}
           >
             <X size={15} />
           </button>
@@ -566,9 +537,9 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* 3. Main Workbench or Inpatient Journey Tracker */}
+      {/* 3. Main Unified Workbench or Inpatient Journey Tracker */}
       {viewMode === 'journey' ? (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', background: '#080d19' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', background: 'var(--bg-primary)' }}>
           <JourneyTracker />
         </div>
       ) : (
@@ -578,11 +549,11 @@ export const App: React.FC = () => {
         <section className="panel">
           <div className="panel-header">
             <div className="panel-title">
-              <FileText size={16} color="#06B6D4" />
+              <FileText size={16} color="#0b3a72" />
               <span>{activeFileBlob ? 'Live PDF Document Preview' : 'Document Master Viewer'}</span>
             </div>
             <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
-              Target: <strong style={{ color: '#fef08a' }}>{activeCitation?.clause_id || 'SEC-3.2.1'}</strong>
+              Target: <strong style={{ color: '#92400e' }}>{activeCitation?.clause_id || 'SEC-3.2.1'}</strong>
             </span>
           </div>
 
@@ -597,7 +568,7 @@ export const App: React.FC = () => {
                 >
                   <ChevronLeft size={14} />
                 </button>
-                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f8fafc' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#0f172a' }}>
                   Page {currentPage} of {numPages || activePolicy?.all_citations?.length || 36}
                 </span>
                 <button
@@ -642,7 +613,7 @@ export const App: React.FC = () => {
                   onLoadSuccess={({ numPages }) => setNumPages(numPages)}
                   loading={
                     <div className="pdf-loading-state">
-                      <Sparkles size={20} className="spin" color="#06B6D4" />
+                      <Sparkles size={20} className="spin" color="#0b3a72" />
                       <span>Rendering High-Resolution PDF Document...</span>
                     </div>
                   }
@@ -666,14 +637,14 @@ export const App: React.FC = () => {
                 {activeCitation && (
                   <div className="active-clause-callout" style={{ width: '100%', marginTop: '10px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <strong style={{ fontSize: '0.84rem', color: '#fef08a' }}>
+                      <strong style={{ fontSize: '0.84rem', color: '#92400e' }}>
                         ⭐ {activeCitation.clause_title}
                       </strong>
-                      <span style={{ fontSize: '0.7rem', background: '#000', padding: '2px 6px', borderRadius: '4px', color: '#fde047' }}>
+                      <span style={{ fontSize: '0.7rem', background: 'var(--color-primary)', padding: '2px 6px', borderRadius: '4px', color: '#fbbf24' }}>
                         PAGE {activeCitation.page_number} • {activeCitation.clause_id}
                       </span>
                     </div>
-                    <p style={{ margin: 0, fontStyle: 'italic', color: '#fff', fontSize: '0.8rem' }}>
+                    <p style={{ margin: 0, fontStyle: 'italic', color: '#78350f', fontSize: '0.8rem' }}>
                       "{activeCitation.exact_text}"
                     </p>
                   </div>
@@ -694,14 +665,14 @@ export const App: React.FC = () => {
                 {/* Glowing Highlighted Clause Callout */}
                 <div className="active-clause-callout">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <strong style={{ fontSize: '0.86rem', color: '#fef08a' }}>
+                    <strong style={{ fontSize: '0.86rem', color: '#92400e' }}>
                       ⭐ {activeCitation?.clause_title || 'Clause 3.2.1: Room Rent and Proportionate Deduction'}
                     </strong>
-                    <span style={{ fontSize: '0.7rem', background: '#000', padding: '2px 6px', borderRadius: '4px', color: '#fde047' }}>
+                    <span style={{ fontSize: '0.7rem', background: 'var(--color-primary)', padding: '2px 6px', borderRadius: '4px', color: '#fbbf24' }}>
                       PAGE {activeCitation?.page_number || currentPage} • {activeCitation?.clause_id || 'SEC-3.2.1'}
                     </span>
                   </div>
-                  <p style={{ margin: 0, fontStyle: 'italic', color: '#fff', fontSize: '0.82rem' }}>
+                  <p style={{ margin: 0, fontStyle: 'italic', color: '#78350f', fontSize: '0.82rem' }}>
                     "{activeCitation?.exact_text || activePolicy?.room_limit.citation?.exact_text}"
                   </p>
                 </div>
@@ -769,14 +740,14 @@ export const App: React.FC = () => {
                   >
                     <td><strong>01</strong></td>
                     <td>
-                      <div style={{ fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <span>Room Rent Cap</span>
-                        {renderConfidenceBadge(activePolicy?.room_limit.citation?.confidence || 0.94)}
-                      </div>
+                      <div style={{ fontWeight: 700, color: '#0f172a' }}>Room Rent Cap</div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>SEC-3.2.1 Boarding & Nursing</div>
+                      {activePolicy?.room_limit.citation?.confidence !== undefined && activePolicy.room_limit.citation.confidence < 0.85 && (
+                        <span className="confidence-chip-low">⚠️ Review term</span>
+                      )}
                     </td>
                     <td>
-                      <span style={{ color: activePolicy?.room_limit.no_room_rent_capping ? '#34d399' : '#fbbf24', fontWeight: 600 }}>
+                      <span style={{ color: activePolicy?.room_limit.no_room_rent_capping ? '#16a34a' : '#d97706', fontWeight: 600 }}>
                         {activePolicy?.room_limit.no_room_rent_capping 
                           ? 'No Cap (Any Room Allowed)' 
                           : `₹${(activePolicy?.room_limit.capped_amount_per_day || 5000).toLocaleString('en-IN')}/day`}
@@ -785,7 +756,7 @@ export const App: React.FC = () => {
                         <div style={{ fontSize: '0.68rem', color: '#f43f5e' }}>Proportionate Cut Active</div>
                       )}
                     </td>
-                    <td><span style={{ color: '#06b6d4', fontWeight: 700 }}>Pg {activePolicy?.room_limit.citation?.page_number || 12}</span></td>
+                    <td><span style={{ color: '#0b3a72', fontWeight: 700 }}>Pg {activePolicy?.room_limit.citation?.page_number || 12}</span></td>
                     <td>
                       <span className={`table-status-chip ${activePolicy?.room_limit.no_room_rent_capping ? 'chip-green' : 'chip-amber'}`}>
                         {activePolicy?.room_limit.no_room_rent_capping ? 'SAFE' : 'RISK'}
@@ -803,18 +774,15 @@ export const App: React.FC = () => {
                   >
                     <td><strong>02</strong></td>
                     <td>
-                      <div style={{ fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <span>ICU / ICCU Limit</span>
-                        {renderConfidenceBadge(activePolicy?.all_citations[1]?.confidence || 0.96)}
-                      </div>
+                      <div style={{ fontWeight: 700, color: '#0f172a' }}>ICU / ICCU Limit</div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Critical Care Monitoring</div>
                     </td>
                     <td>
-                      <span style={{ fontWeight: 600, color: '#fff' }}>
+                      <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
                         {activePolicy?.icu_limit_per_day ? `₹${activePolicy.icu_limit_per_day.toLocaleString('en-IN')}/day` : 'As per actuals'}
                       </span>
                     </td>
-                    <td><span style={{ color: '#06b6d4', fontWeight: 700 }}>Pg {activePolicy?.all_citations[1]?.page_number || 13}</span></td>
+                    <td><span style={{ color: '#0b3a72', fontWeight: 700 }}>Pg {activePolicy?.all_citations[1]?.page_number || 13}</span></td>
                     <td><span className="table-status-chip chip-green">COVERED</span></td>
                   </tr>
 
@@ -827,20 +795,20 @@ export const App: React.FC = () => {
                   >
                     <td><strong>03</strong></td>
                     <td>
-                      <div style={{ fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <span>Mandatory Co-Pay</span>
-                        {renderConfidenceBadge(activePolicy?.copay.citation?.confidence || 0.92)}
-                      </div>
+                      <div style={{ fontWeight: 700, color: '#0f172a' }}>Mandatory Co-Pay</div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Senior Citizen Clause</div>
+                      {activePolicy?.copay.citation?.confidence !== undefined && activePolicy.copay.citation.confidence < 0.85 && (
+                        <span className="confidence-chip-low">⚠️ Review clause</span>
+                      )}
                     </td>
                     <td>
-                      <span style={{ fontWeight: 600, color: (activePolicy?.copay.senior_citizen_percentage || 0) > 0 ? '#fbbf24' : '#34d399' }}>
+                      <span style={{ fontWeight: 600, color: (activePolicy?.copay.senior_citizen_percentage || 0) > 0 ? '#d97706' : '#16a34a' }}>
                         {(activePolicy?.copay.senior_citizen_percentage || 0) > 0
                           ? `${activePolicy?.copay.senior_citizen_percentage}% (Age 61+)`
                           : '0% Co-Payment'}
                       </span>
                     </td>
-                    <td><span style={{ color: '#06b6d4', fontWeight: 700 }}>Pg {activePolicy?.copay.citation?.page_number || 18}</span></td>
+                    <td><span style={{ color: '#0b3a72', fontWeight: 700 }}>Pg {activePolicy?.copay.citation?.page_number || 18}</span></td>
                     <td>
                       <span className={`table-status-chip ${(activePolicy?.copay.senior_citizen_percentage || 0) > 0 ? 'chip-amber' : 'chip-green'}`}>
                         {(activePolicy?.copay.senior_citizen_percentage || 0) > 0 ? 'APPLIES' : 'ZERO'}
@@ -857,18 +825,15 @@ export const App: React.FC = () => {
                   >
                     <td><strong>04</strong></td>
                     <td>
-                      <div style={{ fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <span>Emergency Pre-Auth</span>
-                        {renderConfidenceBadge(activePolicy?.pre_auth.citation?.confidence || 0.95)}
-                      </div>
+                      <div style={{ fontWeight: 700, color: '#0f172a' }}>Emergency Pre-Auth</div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Intimation Window</div>
                     </td>
                     <td>
-                      <span style={{ fontWeight: 600, color: '#fff' }}>
+                      <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
                         Within {activePolicy?.pre_auth.emergency_window_hours || 24} hours of admission
                       </span>
                     </td>
-                    <td><span style={{ color: '#06b6d4', fontWeight: 700 }}>Pg {activePolicy?.pre_auth.citation?.page_number || 27}</span></td>
+                    <td><span style={{ color: '#0b3a72', fontWeight: 700 }}>Pg {activePolicy?.pre_auth.citation?.page_number || 27}</span></td>
                     <td><span className="table-status-chip chip-green">24H RULE</span></td>
                   </tr>
 
@@ -882,18 +847,15 @@ export const App: React.FC = () => {
                   >
                     <td><strong>05</strong></td>
                     <td>
-                      <div style={{ fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <span>Consumables Rider</span>
-                        {renderConfidenceBadge(0.91)}
-                      </div>
+                      <div style={{ fontWeight: 700, color: '#0f172a' }}>Consumables Rider</div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Gloves, PPE, Syringes</div>
                     </td>
                     <td>
-                      <span style={{ fontWeight: 600, color: activePolicy?.has_consumables_rider ? '#34d399' : '#fb7185' }}>
+                      <span style={{ fontWeight: 600, color: activePolicy?.has_consumables_rider ? '#16a34a' : '#dc2626' }}>
                         {activePolicy?.has_consumables_rider ? 'Fully Covered (Plus Rider)' : 'Excluded (List I items unpaid)'}
                       </span>
                     </td>
-                    <td><span style={{ color: '#06b6d4', fontWeight: 700 }}>Pg 34</span></td>
+                    <td><span style={{ color: '#0b3a72', fontWeight: 700 }}>Pg 34</span></td>
                     <td>
                       <span className={`table-status-chip ${activePolicy?.has_consumables_rider ? 'chip-green' : 'chip-red'}`}>
                         {activePolicy?.has_consumables_rider ? 'COVERED' : 'EXCLUDED'}
@@ -905,17 +867,17 @@ export const App: React.FC = () => {
                   <tr>
                     <td><strong>06</strong></td>
                     <td>
-                      <div style={{ fontWeight: 700, color: '#f8fafc' }}>Waiting Periods</div>
+                      <div style={{ fontWeight: 700, color: '#0f172a' }}>Waiting Periods</div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Specific Ailment Exclusions</div>
                     </td>
                     <td>
-                      <span style={{ fontWeight: 600, color: '#cbd5e1' }}>
+                      <span style={{ fontWeight: 600, color: '#334155' }}>
                         {activePolicy?.waiting_periods && activePolicy.waiting_periods.length > 0 
                           ? `${activePolicy.waiting_periods[0].duration} Initial • 24 Mo Joint/Hernia`
                           : '30 Days Initial • 24 Mo Specific'}
                       </span>
                     </td>
-                    <td><span style={{ color: '#06b6d4', fontWeight: 700 }}>Pg {activePolicy?.waiting_periods?.[0]?.page || 10}</span></td>
+                    <td><span style={{ color: '#0b3a72', fontWeight: 700 }}>Pg {activePolicy?.waiting_periods?.[0]?.page || 10}</span></td>
                     <td><span className="table-status-chip chip-green">SCHEDULED</span></td>
                   </tr>
                 </tbody>
@@ -933,7 +895,7 @@ export const App: React.FC = () => {
                     key={i}
                     style={{
                       background: 'rgba(6, 182, 212, 0.12)',
-                      color: '#67e8f9',
+                      color: '#1d4ed8',
                       border: '1px solid rgba(6, 182, 212, 0.25)',
                       padding: '2px 8px',
                       borderRadius: '12px',
@@ -953,12 +915,12 @@ export const App: React.FC = () => {
         <section className="panel">
           <div className="panel-header">
             <div className="panel-title">
-              <Sparkles size={16} color="#06B6D4" />
+              <Sparkles size={16} color="#0b3a72" />
               <span>LLM Caregiver Intelligence</span>
             </div>
             <button
               className="sample-pill-btn"
-              style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontSize: '0.7rem' }}
+              style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#16a34a', fontSize: '0.7rem' }}
               onClick={handleGenerateDossier}
             >
               One-Click Dossier
@@ -967,9 +929,9 @@ export const App: React.FC = () => {
 
           <div className="panel-body">
             {/* Phase 5: Dynamic Next Best Action Guidance Banner */}
-            <div className="llm-advice-card" style={{ borderLeft: `3px solid ${guidance?.badge_color || '#38bdf8'}` }}>
+            <div className="llm-advice-card" style={{ borderLeft: `3px solid ${guidance?.badge_color || '#1d4ed8'}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 800, color: guidance?.badge_color || '#38bdf8' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 800, color: guidance?.badge_color || '#1d4ed8' }}>
                   <Bot size={15} />
                   <span>{guidance?.headline || 'AI Guidance for Caregiver (at 2 AM):'}</span>
                 </div>
@@ -980,7 +942,7 @@ export const App: React.FC = () => {
                 )}
               </div>
 
-              <div style={{ fontSize: '0.78rem', color: '#e2e8f0', lineHeight: '1.5' }}>
+              <div style={{ fontSize: '0.78rem', color: '#334155', lineHeight: '1.5' }}>
                 {guidance?.justification || (
                   activePolicy?.room_limit.no_room_rent_capping
                     ? 'Your policy has no room sub-limit capping. Any room category is 100% cashless eligible.'
@@ -995,7 +957,7 @@ export const App: React.FC = () => {
                     className="sample-pill-btn"
                     style={{
                       background: guidance.priority === 'CRITICAL' ? 'rgba(244, 63, 94, 0.25)' : 'rgba(6, 182, 212, 0.2)',
-                      color: guidance.priority === 'CRITICAL' ? '#f43f5e' : '#67e8f9',
+                      color: guidance.priority === 'CRITICAL' ? '#f43f5e' : '#1d4ed8',
                       border: `1px solid ${guidance.priority === 'CRITICAL' ? '#f43f5e' : 'rgba(6, 182, 212, 0.4)'}`,
                       fontSize: '0.74rem',
                       fontWeight: 700,
@@ -1032,7 +994,7 @@ export const App: React.FC = () => {
                 <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase' }}>
                   Proportionate Deduction Simulator
                 </span>
-                <span style={{ fontSize: '0.7rem', color: '#06b6d4' }}>City Heart Institute</span>
+                <span style={{ fontSize: '0.7rem', color: '#0b3a72' }}>City Heart Institute</span>
               </div>
 
               {/* Controls */}
@@ -1068,11 +1030,11 @@ export const App: React.FC = () => {
               </div>
 
               {/* Calculated Out of Pocket Callout */}
-              <div style={{ background: '#0a0f1d', padding: '8px', borderRadius: '6px', textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ background: '#f1f5f9', padding: '8px', borderRadius: '6px', textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
                 <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
                   Estimated Caregiver Out-of-Pocket
                 </div>
-                <div style={{ fontSize: '1.45rem', fontWeight: 800, color: costAnalysis?.proportionate_deduction_triggered ? '#fbbf24' : '#34d399', margin: '2px 0' }}>
+                <div style={{ fontSize: '1.45rem', fontWeight: 800, color: costAnalysis?.proportionate_deduction_triggered ? '#d97706' : '#16a34a', margin: '2px 0' }}>
                   ₹{(costAnalysis?.estimated_out_of_pocket || 0).toLocaleString('en-IN')}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
@@ -1082,7 +1044,7 @@ export const App: React.FC = () => {
 
               {/* Proportionate Warning */}
               {costAnalysis?.proportionate_deduction_triggered && (
-                <div style={{ marginTop: '8px', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid #f59e0b', padding: '6px 8px', borderRadius: '4px', fontSize: '0.72rem', color: '#fef08a' }}>
+                <div style={{ marginTop: '8px', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid #f59e0b', padding: '6px 8px', borderRadius: '4px', fontSize: '0.72rem', color: '#92400e' }}>
                   ⚠️ <strong>Room limit breached!</strong> Insurer proportionately deducts <strong>₹{costAnalysis.proportionate_deduction_penalty.toLocaleString('en-IN')}</strong> from Doctor & OT fees.
                 </div>
               )}
@@ -1090,34 +1052,33 @@ export const App: React.FC = () => {
 
             {/* Grounded AI Assistant Chat */}
             <div className="mini-chat-container">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-subtle)' }}>
-                <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <MessageSquare size={13} color="#06B6D4" />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: '#f8fafc', borderBottom: '1px solid var(--border-subtle)' }}>
+                <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MessageSquare size={13} color="#0b3a72" />
                   <span>{chatLanguage === 'hi' ? 'पॉलिसी सहायक (हिंदी)' : 'Grounded Policy Q&A'}</span>
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2px', background: 'rgba(0,0,0,0.5)', borderRadius: '6px', padding: '2px', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2px', background: '#ffffff', borderRadius: '6px', padding: '2px', border: '1px solid var(--border-subtle)' }}>
                   <button
                     onClick={() => setChatLanguage('en')}
-                    style={{ background: chatLanguage === 'en' ? '#06b6d4' : 'transparent', color: chatLanguage === 'en' ? '#000' : '#94a3b8', border: 'none', borderRadius: '4px', padding: '2px 8px', fontSize: '0.66rem', fontWeight: 700, cursor: 'pointer' }}
+                    style={{ background: chatLanguage === 'en' ? '#0b3a72' : 'transparent', color: chatLanguage === 'en' ? '#ffffff' : '#64748b', border: 'none', borderRadius: '4px', padding: '2px 8px', fontSize: '0.66rem', fontWeight: 700, cursor: 'pointer' }}
                   >
                     EN
                   </button>
                   <button
                     onClick={() => setChatLanguage('hi')}
-                    style={{ background: chatLanguage === 'hi' ? '#06b6d4' : 'transparent', color: chatLanguage === 'hi' ? '#000' : '#94a3b8', border: 'none', borderRadius: '4px', padding: '2px 8px', fontSize: '0.66rem', fontWeight: 700, cursor: 'pointer' }}
+                    style={{ background: chatLanguage === 'hi' ? '#0b3a72' : 'transparent', color: chatLanguage === 'hi' ? '#ffffff' : '#64748b', border: 'none', borderRadius: '4px', padding: '2px 8px', fontSize: '0.66rem', fontWeight: 700, cursor: 'pointer' }}
                   >
                     हिंदी
                   </button>
                 </div>
               </div>
-
               <div className="mini-chat-history">
                 {chatMessages.map((msg, i) => (
                   <div
                     key={i}
                     style={{
-                      background: msg.sender === 'user' ? 'var(--grad-cyan-blue)' : 'rgba(255, 255, 255, 0.05)',
-                      color: '#fff',
+                      background: msg.sender === 'user' ? 'var(--grad-cyan-blue)' : '#eef2f7',
+                      color: msg.sender === 'user' ? '#fff' : 'var(--text-main)',
                       padding: '6px 10px',
                       borderRadius: '8px',
                       alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
@@ -1132,7 +1093,7 @@ export const App: React.FC = () => {
                         className="sample-pill-btn"
                         style={{
                           fontSize: '0.68rem',
-                          color: '#67e8f9',
+                          color: '#1d4ed8',
                           marginTop: '4px',
                           fontWeight: 700,
                           padding: '2px 6px',
@@ -1162,7 +1123,7 @@ export const App: React.FC = () => {
                 ))}
                 {chatLoading && (
                   <div style={{ fontStyle: 'italic', fontSize: '0.74rem', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Sparkles size={12} className="spin" color="#06B6D4" />
+                    <Sparkles size={12} className="spin" color="#0b3a72" />
                     <span>LLM retrieving grounded policy passages & verifying citations...</span>
                   </div>
                 )}
@@ -1170,55 +1131,27 @@ export const App: React.FC = () => {
 
               {/* Quick questions chips */}
               <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '4px 8px', background: 'rgba(0,0,0,0.4)' }}>
-                {chatLanguage === 'hi' ? (
-                  <>
-                    <button
-                      className="sample-pill-btn"
-                      style={{ fontSize: '0.68rem', padding: '2px 6px' }}
-                      onClick={() => handleSendMessage('क्या मैं बिना पेनाल्टी के डीलक्स रूम ले सकता हूँ?')}
-                    >
-                      डीलक्स रूम?
-                    </button>
-                    <button
-                      className="sample-pill-btn"
-                      style={{ fontSize: '0.68rem', padding: '2px 6px' }}
-                      onClick={() => handleSendMessage('सीनियर सिटीजन के लिए को-पे कितना है?')}
-                    >
-                      सीनियर को-पे?
-                    </button>
-                    <button
-                      className="sample-pill-btn"
-                      style={{ fontSize: '0.68rem', padding: '2px 6px' }}
-                      onClick={() => handleSendMessage('इमरजेंसी प्री-ऑथ की समय सीमा क्या है?')}
-                    >
-                      24 घंटे नियम?
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      className="sample-pill-btn"
-                      style={{ fontSize: '0.68rem', padding: '2px 6px' }}
-                      onClick={() => handleSendMessage('Can I take a Deluxe Room without penalty?')}
-                    >
-                      Deluxe Room?
-                    </button>
-                    <button
-                      className="sample-pill-btn"
-                      style={{ fontSize: '0.68rem', padding: '2px 6px' }}
-                      onClick={() => handleSendMessage('What is the senior citizen co-pay?')}
-                    >
-                      Senior Co-Pay?
-                    </button>
-                    <button
-                      className="sample-pill-btn"
-                      style={{ fontSize: '0.68rem', padding: '2px 6px' }}
-                      onClick={() => handleSendMessage('What is the emergency pre-auth deadline?')}
-                    >
-                      24h Deadline?
-                    </button>
-                  </>
-                )}
+                <button
+                  className="sample-pill-btn"
+                  style={{ fontSize: '0.68rem', padding: '2px 6px' }}
+                  onClick={() => handleSendMessage('Can I take a Deluxe Room without penalty?')}
+                >
+                  Deluxe Room?
+                </button>
+                <button
+                  className="sample-pill-btn"
+                  style={{ fontSize: '0.68rem', padding: '2px 6px' }}
+                  onClick={() => handleSendMessage('What is the senior citizen co-pay?')}
+                >
+                  Senior Co-Pay?
+                </button>
+                <button
+                  className="sample-pill-btn"
+                  style={{ fontSize: '0.68rem', padding: '2px 6px' }}
+                  onClick={() => handleSendMessage('What is the emergency pre-auth deadline?')}
+                >
+                  24h Deadline?
+                </button>
               </div>
 
               {/* Input */}
@@ -1226,7 +1159,7 @@ export const App: React.FC = () => {
                 <input
                   type="text"
                   className="mini-chat-input"
-                  placeholder={chatLanguage === 'hi' ? 'पॉलिसी से संबंधित प्रश्न पूछें...' : 'Ask policy question...'}
+                  placeholder={chatLanguage === "hi" ? "पॉलिसी से संबंधित प्रश्न पूछें..." : "Ask policy question..."}
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -1265,55 +1198,55 @@ export const App: React.FC = () => {
             </button>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ShieldCheck size={22} color="#10B981" />
+                <ShieldCheck size={22} color="#16a34a" />
                 <div>
-                  <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
+                  <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
                     CareWise Claim Dossier #{dossierData.dossier_id}
                   </h3>
-                  <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-                    TPA Submission Code: <code style={{ color: '#38bdf8' }}>{dossierData.tpa_submission_code}</code>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                    TPA Submission Code: <code style={{ color: '#0b3a72' }}>{dossierData.tpa_submission_code}</code>
                   </div>
                 </div>
               </div>
-              <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+              <span style={{ fontSize: '0.72rem', background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
                 SANCTION READY
               </span>
             </div>
 
             {/* Financial Settlement Breakdown */}
-            <div style={{ background: '#080d19', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
-              <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '10px' }}>
+            <div style={{ background: '#f8fafc', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '10px' }}>
                 Financial Settlement Breakdown (Real Dynamic Calculations)
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', textAlign: 'center' }}>
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '6px' }}>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Total Bill</div>
-                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc' }}>₹{dossierData.total_bill.toLocaleString('en-IN')}</div>
+                <div style={{ background: '#ffffff', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Total Bill</div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>₹{dossierData.total_bill.toLocaleString('en-IN')}</div>
                 </div>
-                <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '8px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                  <div style={{ fontSize: '0.68rem', color: '#34d399' }}>Cashless Sanctioned</div>
-                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#34d399' }}>₹{dossierData.cashless_sanctioned.toLocaleString('en-IN')}</div>
+                <div style={{ background: '#f0fdf4', padding: '8px', borderRadius: '6px', border: '1px solid #bbf7d0' }}>
+                  <div style={{ fontSize: '0.68rem', color: '#16a34a' }}>Cashless Sanctioned</div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#16a34a' }}>₹{dossierData.cashless_sanctioned.toLocaleString('en-IN')}</div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '6px' }}>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Co-Pay Settled</div>
-                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fbbf24' }}>₹{dossierData.copay_settled.toLocaleString('en-IN')}</div>
+                <div style={{ background: '#ffffff', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ fontSize: '0.68rem', color: '#b45309' }}>Co-Pay Settled</div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#b45309' }}>₹{dossierData.copay_settled.toLocaleString('en-IN')}</div>
                 </div>
-                <div style={{ background: 'rgba(239, 68, 68, 0.08)', padding: '8px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                  <div style={{ fontSize: '0.68rem', color: '#f87171' }}>Caregiver Paid</div>
-                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f87171' }}>₹{dossierData.caregiver_paid.toLocaleString('en-IN')}</div>
+                <div style={{ background: '#fef2f2', padding: '8px', borderRadius: '6px', border: '1px solid #fecaca' }}>
+                  <div style={{ fontSize: '0.68rem', color: '#dc2626' }}>Caregiver Paid</div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#dc2626' }}>₹{dossierData.caregiver_paid.toLocaleString('en-IN')}</div>
                 </div>
               </div>
             </div>
 
             {/* Checklist items */}
             <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px' }}>
+              <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '8px' }}>
                 Verified Document Checklist
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                 {dossierData.documents_checklist.map((doc, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#cbd5e1', background: 'rgba(255,255,255,0.02)', padding: '6px 10px', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
-                    <CheckCircle2 size={13} color="#10B981" />
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-main)', background: '#ffffff', padding: '6px 10px', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
+                    <CheckCircle2 size={13} color="#16a34a" />
                     <span>{doc}</span>
                   </div>
                 ))}
@@ -1343,7 +1276,7 @@ export const App: React.FC = () => {
 
             {/* WhatsApp Toast */}
             {waSentToast && (
-              <div style={{ marginTop: '12px', background: 'rgba(37, 211, 102, 0.15)', border: '1px solid #25D366', color: '#4ade80', padding: '8px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, textAlign: 'center' }}>
+              <div style={{ marginTop: '12px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', padding: '8px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, textAlign: 'center' }}>
                 {waSentToast}
               </div>
             )}
@@ -1364,7 +1297,7 @@ export const App: React.FC = () => {
                 Caregiver Emergency Family Alert
               </h3>
             </div>
-            <div style={{ background: '#080d19', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '12px', fontFamily: 'monospace', fontSize: '0.78rem', color: '#cbd5e1', whiteSpace: 'pre-line', lineHeight: '1.5', maxHeight: '250px', overflowY: 'auto' }}>
+            <div style={{ background: '#f1f5f9', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '12px', fontFamily: 'monospace', fontSize: '0.78rem', color: '#334155', whiteSpace: 'pre-line', lineHeight: '1.5', maxHeight: '250px', overflowY: 'auto' }}>
               {sosText}
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
@@ -1402,7 +1335,7 @@ export const App: React.FC = () => {
                 CareWise — 60-Second Hackathon Winning Pitch
               </h3>
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#cbd5e1', lineHeight: '1.6' }}>
+            <div style={{ fontSize: '0.85rem', color: '#334155', lineHeight: '1.6' }}>
               <p><strong>The Core Problem</strong>: Caregivers at 2 AM face hidden proportionate deduction traps where picking an over-limit room cuts surgeon fees by 50%, resulting in unexpected ₹75k+ bills at discharge.</p>
               <div style={{ background: 'rgba(6, 182, 212, 0.1)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '10px', borderRadius: '6px', margin: '12px 0' }}>
                 <strong>How to Demo for Judges</strong>:

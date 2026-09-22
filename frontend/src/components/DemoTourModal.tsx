@@ -100,19 +100,19 @@ export const DemoTourModal: React.FC<DemoTourModalProps> = ({
             <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#f59e0b', letterSpacing: '0.6px' }}>
               {step.category} • STEP {currentStep + 1} OF {tourSteps.length}
             </div>
-            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, color: '#fff' }}>
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
               {step.title}
             </h3>
           </div>
         </div>
 
         {/* Content */}
-        <div style={{ margin: '18px 0', fontSize: '0.9rem', color: '#cbd5e1', lineHeight: '1.6' }}>
+        <div style={{ margin: '18px 0', fontSize: '0.9rem', color: '#334155', lineHeight: '1.6' }}>
           <p>{step.description}</p>
 
           <div style={{ marginTop: '14px', background: 'rgba(6, 182, 212, 0.1)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '12px 14px', borderRadius: '8px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-            <Sparkles size={16} color="#06B6D4" style={{ marginTop: '2px', flexShrink: 0 }} />
-            <div style={{ fontSize: '0.84rem', color: '#67e8f9', fontWeight: 600 }}>
+            <Sparkles size={16} color="#0b3a72" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ fontSize: '0.84rem', color: '#1d4ed8', fontWeight: 600 }}>
               {step.keyHighlight}
             </div>
           </div>
@@ -131,7 +131,7 @@ export const DemoTourModal: React.FC<DemoTourModalProps> = ({
                 width: i === currentStep ? '24px' : '8px',
                 height: '8px',
                 borderRadius: '4px',
-                background: i === currentStep ? '#06B6D4' : 'rgba(255, 255, 255, 0.2)',
+                background: i === currentStep ? '#0b3a72' : 'rgba(15, 23, 42, 0.15)',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}

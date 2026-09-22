@@ -70,7 +70,7 @@ Track live updates: https://carewise.health/track/ADM-2026-89410`;
         </div>
 
         {/* Message Preview Box */}
-        <div style={{ background: '#060a12', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '16px', fontFamily: 'monospace', fontSize: '0.84rem', color: '#e2e8f0', whiteSpace: 'pre-line', lineHeight: '1.6', maxHeight: '280px', overflowY: 'auto' }}>
+        <div style={{ background: '#f1f5f9', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '16px', fontFamily: 'monospace', fontSize: '0.84rem', color: '#334155', whiteSpace: 'pre-line', lineHeight: '1.6', maxHeight: '280px', overflowY: 'auto' }}>
           {shareText}
         </div>
 

@@ -29,13 +29,13 @@ export const Header: React.FC<HeaderProps> = ({
           <svg className="brand-logo-icon" viewBox="0 0 100 100" fill="none">
             <defs>
               <linearGradient id="hdrGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#06B6D4" />
+                <stop offset="0%" stopColor="#0b3a72" />
                 <stop offset="100%" stopColor="#2563EB" />
               </linearGradient>
             </defs>
             <path d="M50 8 L85 22 C85 55 50 88 50 94 C50 88 15 55 15 22 Z" fill="#0F172A" stroke="url(#hdrGrad)" strokeWidth="5" />
-            <rect x="44" y="32" width="12" height="32" rx="3" fill="#06B6D4" />
-            <rect x="34" y="42" width="32" height="12" rx="3" fill="#06B6D4" />
+            <rect x="44" y="32" width="12" height="32" rx="3" fill="#0b3a72" />
+            <rect x="34" y="42" width="32" height="12" rx="3" fill="#0b3a72" />
             <circle cx="50" cy="48" r="3.5" fill="#FFFFFF" />
           </svg>
           <div>
@@ -48,7 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="header-actions">
           {/* Active Policy Selector */}
           <div className="policy-selector-pill" title="Click to switch active policy">
-            <FileText size={15} color="#06B6D4" />
+            <FileText size={15} color="#0b3a72" />
             <select
               style={{
                 background: 'transparent',

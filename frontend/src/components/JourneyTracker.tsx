@@ -10,6 +10,7 @@ import {
   ShieldCheck, 
   CheckSquare,
   Square,
+  Share2,
   FileDown,
   MessageSquare
 } from 'lucide-react';
@@ -69,10 +70,10 @@ export const JourneyTracker: React.FC = () => {
     setWaSending(true);
     try {
       await notifyCaregiverWhatsApp();
-      setWaSentToast('Discharge dossier & status transmitted to Caregiver WhatsApp (+91 98765 43210)');
+      setWaSentToast('✅ WhatsApp notification sent to Caregiver (+91 98765 43210)!');
       setTimeout(() => setWaSentToast(null), 4500);
     } catch (err) {
-      setWaSentToast('WhatsApp alert dispatched via CareWise webhook');
+      setWaSentToast('✅ WhatsApp alert dispatched via CareWise webhook');
       setTimeout(() => setWaSentToast(null), 4500);
     } finally {
       setWaSending(false);
@@ -90,7 +91,7 @@ export const JourneyTracker: React.FC = () => {
       {/* Active Patient Case Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '24px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '16px' }}>
         <div>
-          <span style={{ fontSize: '0.75rem', background: 'rgba(6, 182, 212, 0.15)', color: '#38bdf8', fontWeight: 700, padding: '3px 10px', borderRadius: '12px' }}>
+          <span style={{ fontSize: '0.75rem', background: 'rgba(6, 182, 212, 0.15)', color: '#1d4ed8', fontWeight: 700, padding: '3px 10px', borderRadius: '12px' }}>
             ACTIVE INPATIENT JOURNEY
           </span>
           <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.45rem', fontWeight: 800, marginTop: '4px' }}>
@@ -104,13 +105,13 @@ export const JourneyTracker: React.FC = () => {
         <div style={{ display: 'flex', gap: '16px' }}>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Pre-Auth Approved</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#34d399' }}>
+            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#16a34a' }}>
               ₹{journeyData.pre_auth_approved_amount.toLocaleString('en-IN')}
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Current Interim Bill</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#38bdf8' }}>
+            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#1d4ed8' }}>
               ₹{journeyData.current_interim_bill.toLocaleString('en-IN')}
             </div>
           </div>
@@ -149,7 +150,7 @@ export const JourneyTracker: React.FC = () => {
               </h3>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{activeStage.subtitle}</p>
             </div>
-            <span style={{ fontSize: '0.75rem', padding: '4px 10px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.15)', color: '#38bdf8', fontWeight: 700 }}>
+            <span style={{ fontSize: '0.75rem', padding: '4px 10px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.15)', color: '#1d4ed8', fontWeight: 700 }}>
               {activeStage.status}
             </span>
           </div>
@@ -189,7 +190,7 @@ export const JourneyTracker: React.FC = () => {
                     <Square size={18} color="#94A3B8" style={{ marginTop: 2, flexShrink: 0 }} />
                   )}
                   <div>
-                    <div style={{ fontSize: '0.84rem', fontWeight: 600, color: item.completed ? '#f8fafc' : '#94a3b8' }}>
+                    <div style={{ fontSize: '0.84rem', fontWeight: 600, color: item.completed ? '#0f172a' : '#64748b' }}>
                       {item.task}
                     </div>
                     <div style={{ fontSize: '0.74rem', color: 'var(--accent-cyan)', marginTop: '2px' }}>
@@ -230,7 +231,7 @@ export const JourneyTracker: React.FC = () => {
           {/* Active Contextual Alerts */}
           <div className="glass-panel" style={{ padding: '20px' }}>
             <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <AlertCircle size={15} color="#06B6D4" />
+              <AlertCircle size={15} color="#0b3a72" />
               <span>Real-Time Insurance-Aware Alerts</span>
             </div>
 
@@ -246,7 +247,7 @@ export const JourneyTracker: React.FC = () => {
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <strong style={{ fontSize: '0.88rem', color: alt.severity === 'WARNING' ? '#fbbf24' : alt.severity === 'SUCCESS' ? '#34d399' : '#38bdf8' }}>
+                  <strong style={{ fontSize: '0.88rem', color: alt.severity === 'WARNING' ? '#d97706' : alt.severity === 'SUCCESS' ? '#16a34a' : '#1d4ed8' }}>
                     {alt.title}
                   </strong>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{alt.timestamp}</span>
@@ -267,105 +268,75 @@ export const JourneyTracker: React.FC = () => {
             ))}
           </div>
 
-          {/* WhatsApp Sent Toast Alert */}
-          {waSentToast && (
-            <div style={{
-              background: 'rgba(16, 185, 129, 0.2)',
-              border: '1px solid #10b981',
-              borderRadius: '8px',
-              padding: '10px 14px',
-              color: '#34d399',
-              fontSize: '0.82rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <CheckCircle2 size={16} color="#34d399" />
-              <span>{waSentToast}</span>
-            </div>
-          )}
-
           {/* Dossier Generated Card */}
           {dossier && (
             <div className="glass-panel" style={{ padding: '20px', border: '1px solid #10b981', background: 'rgba(16, 185, 129, 0.08)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#34d399', fontWeight: 700, fontSize: '0.94rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#16a34a', fontWeight: 700, fontSize: '0.92rem' }}>
                   <Sparkles size={16} />
-                  <span>CareWise Claim & Care Dossier Ready!</span>
+                  <span>CareWise Claim Dossier Ready!</span>
                 </div>
-                <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
-                  CADF VERIFIED
+                <span style={{ fontSize: '0.72rem', background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                  SANCTION READY
                 </span>
               </div>
-
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '4px 0 10px' }}>
-                Dossier ID: <strong style={{ color: '#fff' }}>{dossier.dossier_id}</strong> • TPA Ref: <strong style={{ color: '#38bdf8' }}>{dossier.tpa_submission_code}</strong>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '6px 0 12px' }}>
+                Dossier ID: {dossier.dossier_id} • TPA Code: <code style={{ color: '#0b3a72' }}>{dossier.tpa_submission_code}</code>
               </div>
 
-              {/* Dynamic Financial Settlement Ledger */}
-              <div style={{ background: 'rgba(0, 0, 0, 0.25)', borderRadius: '8px', padding: '12px', margin: '12px 0', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 700, marginBottom: '8px' }}>
-                  Final Settlement Breakdown
+              {/* Dynamic Financial Ledger */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', textAlign: 'center', margin: '12px 0', background: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                <div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>Total Bill</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>₹{dossier.total_bill.toLocaleString('en-IN')}</div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-                  <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Total Hospital Bill</div>
-                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f8fafc' }}>
-                      ₹{dossier.total_bill.toLocaleString('en-IN')}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.72rem', color: '#34d399' }}>Insurer Cashless Paid</div>
-                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#34d399' }}>
-                      ₹{dossier.cashless_sanctioned.toLocaleString('en-IN')}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Senior Co-Pay Settled</div>
-                    <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#fbbf24' }}>
-                      ₹{dossier.copay_settled.toLocaleString('en-IN')}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Caregiver Out-of-Pocket</div>
-                    <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#f87171' }}>
-                      ₹{dossier.caregiver_paid.toLocaleString('en-IN')}
-                    </div>
-                  </div>
+                <div>
+                  <div style={{ fontSize: '0.68rem', color: '#16a34a' }}>Cashless</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, color: '#16a34a' }}>₹{dossier.cashless_sanctioned.toLocaleString('en-IN')}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.68rem', color: '#b45309' }}>Co-Pay</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, color: '#b45309' }}>₹{dossier.copay_settled.toLocaleString('en-IN')}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.68rem', color: '#dc2626' }}>Caregiver Paid</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, color: '#dc2626' }}>₹{dossier.caregiver_paid.toLocaleString('en-IN')}</div>
                 </div>
               </div>
 
-              <p style={{ fontSize: '0.80rem', color: 'var(--text-main)', margin: '8px 0' }}>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
                 {dossier.summary_text}
               </p>
-
-              <div style={{ marginTop: '8px', fontSize: '0.76rem', color: '#6ee7b7' }}>
+              <div style={{ marginTop: '8px', fontSize: '0.78rem', color: '#15803d' }}>
                 ✓ {dossier.documents_checklist.length} Claim documents bundled & indexed for instant discharge clearance.
               </div>
 
-              {/* Action Buttons: PDF Download & WhatsApp Notification */}
-              <div style={{ marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '8px', marginTop: '14px', flexWrap: 'wrap' }}>
                 <button
-                  className="btn-primary"
-                  style={{ background: 'var(--grad-emerald)', fontSize: '0.80rem', padding: '8px 14px' }}
+                  className="btn-upload-main"
+                  style={{ fontSize: '0.78rem', padding: '6px 14px', flex: 1, justifyContent: 'center' }}
                   onClick={handleDownloadPdf}
-                  title="Download printable PDF for TPA desk"
                 >
                   <FileDown size={15} />
                   <span>Download Official PDF Dossier</span>
                 </button>
-
                 <button
-                  className="btn-outline"
-                  style={{ borderColor: '#25D366', color: '#25D366', fontSize: '0.80rem', padding: '8px 14px' }}
+                  className="btn-upload-main"
+                  style={{ background: '#25D366', fontSize: '0.78rem', padding: '6px 14px', flex: 1, justifyContent: 'center' }}
                   onClick={handleNotifyWhatsApp}
                   disabled={waSending}
-                  title="Dispatch instant WhatsApp update to family"
                 >
-                  <MessageSquare size={15} color="#25D366" />
-                  <span>{waSending ? 'Sending WhatsApp...' : '📲 Notify Caregiver via WhatsApp'}</span>
+                  <Share2 size={15} />
+                  <span>{waSending ? 'Dispatched...' : 'Trigger WhatsApp Notification'}</span>
                 </button>
               </div>
+
+              {waSentToast && (
+                <div style={{ marginTop: '10px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', padding: '6px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, textAlign: 'center' }}>
+                  {waSentToast}
+                </div>
+              )}
             </div>
           )}
         </div>
