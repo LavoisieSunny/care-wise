@@ -1,0 +1,318 @@
+[
+  {
+    "id": "star_family_optima",
+    "insurer_name": "Star Health and Allied Insurance",
+    "policy_name": "Family Health Optima Insurance Plan",
+    "policy_type": "Family Floater Comprehensive",
+    "sum_insured": 500000.0,
+    "room_limit": {
+      "capped_amount_per_day": 5000.0,
+      "percentage_of_sum_insured": 1.0,
+      "no_room_rent_capping": false,
+      "allowed_room_category": "Standard Single Room",
+      "proportionate_deduction_applies": true,
+      "citation": {
+        "clause_id": "SEC-3.2.1",
+        "section": "Coverage Details - Room Rent & ICU",
+        "page_number": 12,
+        "clause_title": "Room Rent, Boarding and Nursing Expenses",
+        "exact_text": "Room rent, boarding and nursing expenses are limited to 1% of the Sum Insured per day, subject to a maximum of Rs. 5,000/- per day. If the Insured occupies a room with a tariff exceeding this limit, all associated medical expenses (including doctor visit fees, surgeon charges, operation theatre and nursing fees) will be deducted proportionately in accordance with the formula: Eligible Amount = (Capped Room Limit / Actual Room Tariff) * Incurred Charges.",
+        "tag": "ROOM_LIMIT"
+      }
+    },
+    "icu_limit_per_day": 10000.0,
+    "copay": {
+      "standard_percentage": 0.0,
+      "senior_citizen_percentage": 20.0,
+      "zone_based_copay": 0.0,
+      "citation": {
+        "clause_id": "SEC-5.1",
+        "section": "Co-payment & Cost Sharing",
+        "page_number": 18,
+        "clause_title": "Senior Citizen Co-payment Condition",
+        "exact_text": "A co-payment of 20% is applicable to each and every admissible claim incurred by any insured person who has attained the age of 61 years or more at the time of hospitalization, irrespective of hospital network status.",
+        "tag": "COPAY"
+      }
+    },
+    "pre_auth": {
+      "emergency_window_hours": 24,
+      "planned_window_hours": 48,
+      "citation": {
+        "clause_id": "SEC-7.4",
+        "section": "Claims Procedure - Cashless Facility",
+        "page_number": 27,
+        "clause_title": "Pre-Authorization Timelines and Emergency Notice",
+        "exact_text": "For emergency hospitalisation, pre-authorization request must be submitted to the Company/TPA within 24 hours of hospital admission or prior to discharge, whichever is earlier. For planned procedures, intimation must reach at least 48 hours prior to admission.",
+        "tag": "PREAUTH"
+      }
+    },
+    "has_consumables_rider": false,
+    "empanelled_tpas": ["Star Health In-House TPA", "Medi Assist", "Vidal Health"],
+    "waiting_periods": [
+      {
+        "type": "Initial Waiting Period",
+        "duration": "30 Days",
+        "description": "No treatment covered except accidental trauma within first 30 days.",
+        "page": 9
+      },
+      {
+        "type": "Specific Ailment Waiting Period",
+        "duration": "24 Months",
+        "description": "Knee replacement, cataract, hernia, gallstones covered only after 24 continuous months.",
+        "page": 10
+      },
+      {
+        "type": "Pre-Existing Disease (PED)",
+        "duration": "36 Months",
+        "description": "Hypertension, diabetes complications covered after 36 months of continuous coverage.",
+        "page": 10
+      }
+    ],
+    "key_exclusions": [
+      "Non-medical items and hygiene consumables (gloves, sanitizers, surgical masks, cotton rolls)",
+      "Vitamins, tonics, and food supplements unless prescribed as part of parenteral nutrition",
+      "Cosmetic, aesthetic, or experimental treatments",
+      "Admission solely for diagnostic investigation without active inpatient therapy"
+    ],
+    "all_citations": [
+      {
+        "clause_id": "SEC-3.2.1",
+        "section": "Coverage Details - Room Rent & ICU",
+        "page_number": 12,
+        "clause_title": "Room Rent, Boarding and Nursing Expenses",
+        "exact_text": "Room rent, boarding and nursing expenses are limited to 1% of the Sum Insured per day, subject to a maximum of Rs. 5,000/- per day. If the Insured occupies a room with a tariff exceeding this limit, all associated medical expenses (including doctor visit fees, surgeon charges, operation theatre and nursing fees) will be deducted proportionately in accordance with the formula: Eligible Amount = (Capped Room Limit / Actual Room Tariff) * Incurred Charges.",
+        "tag": "ROOM_LIMIT"
+      },
+      {
+        "clause_id": "SEC-3.2.2",
+        "section": "Coverage Details - Intensive Care Unit",
+        "page_number": 13,
+        "clause_title": "ICU Charges and Monitoring Expenses",
+        "exact_text": "Intensive Care Unit (ICU) and Intensive Cardiac Care Unit (ICCU) charges are covered up to a limit of 2% of the Sum Insured per day, equivalent to Rs. 10,000/- per day.",
+        "tag": "ICU_LIMIT"
+      },
+      {
+        "clause_id": "SEC-5.1",
+        "section": "Co-payment & Cost Sharing",
+        "page_number": 18,
+        "clause_title": "Senior Citizen Co-payment Condition",
+        "exact_text": "A co-payment of 20% is applicable to each and every admissible claim incurred by any insured person who has attained the age of 61 years or more at the time of hospitalization, irrespective of hospital network status.",
+        "tag": "COPAY"
+      },
+      {
+        "clause_id": "SEC-7.4",
+        "section": "Claims Procedure - Cashless Facility",
+        "page_number": 27,
+        "clause_title": "Pre-Authorization Timelines and Emergency Notice",
+        "exact_text": "For emergency hospitalisation, pre-authorization request must be submitted to the Company/TPA within 24 hours of hospital admission or prior to discharge, whichever is earlier. For planned procedures, intimation must reach at least 48 hours prior to admission.",
+        "tag": "PREAUTH"
+      },
+      {
+        "clause_id": "SEC-9.1",
+        "section": "General Exclusions - List I",
+        "page_number": 34,
+        "clause_title": "Non-Payable Medical Consumables",
+        "exact_text": "Items classified under IRDAI Non-Payable List I (disposable PPE kits, gloves, thermometer, spirometer, cotton wool, surgical tape) are not eligible for indemnity unless covered under an optional specific rider.",
+        "tag": "EXCLUSIONS"
+      }
+    ]
+  },
+  {
+    "id": "hdfc_optima_secure",
+    "insurer_name": "HDFC ERGO General Insurance",
+    "policy_name": "Optima Secure Comprehensive Health Plan",
+    "policy_type": "Zero Capping Premium Health Plan",
+    "sum_insured": 1000000.0,
+    "room_limit": {
+      "capped_amount_per_day": null,
+      "percentage_of_sum_insured": null,
+      "no_room_rent_capping": true,
+      "allowed_room_category": "Any Room Category (Up to Single Private AC & Deluxe)",
+      "proportionate_deduction_applies": false,
+      "citation": {
+        "clause_id": "SEC-2.1",
+        "section": "Section 2 - In-Patient Hospitalisation Benefits",
+        "page_number": 7,
+        "clause_title": "No Room Rent Sub-limits & Zero Proportionate Deduction",
+        "exact_text": "The Policy provides coverage for Room Rent, Boarding and Nursing expenses for any room category chosen by the insured (including Single Private AC Room or Deluxe Room). No proportionate deduction shall be applied on associated medical costs irrespective of room category selected.",
+        "tag": "ROOM_LIMIT"
+      }
+    },
+    "icu_limit_per_day": null,
+    "copay": {
+      "standard_percentage": 0.0,
+      "senior_citizen_percentage": 0.0,
+      "zone_based_copay": 0.0,
+      "citation": {
+        "clause_id": "SEC-4.2",
+        "section": "Section 4 - Cost Sharing Features",
+        "page_number": 14,
+        "clause_title": "Zero Co-payment Across All Age Bands",
+        "exact_text": "Claims under Optima Secure are settled with 0% mandatory co-payment across all ages, including senior citizens aged 60 and above, across our empanelled network hospitals nationwide.",
+        "tag": "COPAY"
+      }
+    },
+    "pre_auth": {
+      "emergency_window_hours": 24,
+      "planned_window_hours": 72,
+      "citation": {
+        "clause_id": "SEC-6.1",
+        "section": "Section 6 - Cashless Claim Administration",
+        "page_number": 21,
+        "clause_title": "Cashless Settlement and Emergency Turnaround",
+        "exact_text": "Immediate emergency admission approval within 1 hour of complete document receipt at the cashless desk. Intimation window for emergency hospitalisation is 24 hours.",
+        "tag": "PREAUTH"
+      }
+    },
+    "has_consumables_rider": true,
+    "empanelled_tpas": ["HDFC ERGO In-House Cashless", "Medi Assist", "FHPL", "Raksha Health Insurance TPA"],
+    "waiting_periods": [
+      {
+        "type": "Initial Waiting Period",
+        "duration": "30 Days",
+        "description": "Standard 30-day waiting period, waived for accidental injury.",
+        "page": 5
+      },
+      {
+        "type": "Specific Illnesses",
+        "duration": "24 Months",
+        "description": "Standard list of 16 specific illnesses covered after 24 months.",
+        "page": 5
+      }
+    ],
+    "key_exclusions": [
+      "Cosmetic surgery, obesity procedures, hormone replacement unless medically essential",
+      "Rest cure, rehabilitation, and respite care",
+      "Hazardous adventure sports accidents unless endorsed"
+    ],
+    "all_citations": [
+      {
+        "clause_id": "SEC-2.1",
+        "section": "Section 2 - In-Patient Hospitalisation Benefits",
+        "page_number": 7,
+        "clause_title": "No Room Rent Sub-limits & Zero Proportionate Deduction",
+        "exact_text": "The Policy provides coverage for Room Rent, Boarding and Nursing expenses for any room category chosen by the insured (including Single Private AC Room or Deluxe Room). No proportionate deduction shall be applied on associated medical costs irrespective of room category selected.",
+        "tag": "ROOM_LIMIT"
+      },
+      {
+        "clause_id": "SEC-2.4",
+        "section": "Section 2 - Special Add-ons",
+        "page_number": 9,
+        "clause_title": "Non-Medical Items Rider (Consumables Coverage)",
+        "exact_text": "Medical consumables including gloves, sanitizers, surgical gowns, syringe disposables, and oxygen masks are fully payable under the integrated Plus Rider.",
+        "tag": "CONSUMABLES"
+      },
+      {
+        "clause_id": "SEC-4.2",
+        "section": "Section 4 - Cost Sharing Features",
+        "page_number": 14,
+        "clause_title": "Zero Co-payment Across All Age Bands",
+        "exact_text": "Claims under Optima Secure are settled with 0% mandatory co-payment across all ages, including senior citizens aged 60 and above, across our empanelled network hospitals nationwide.",
+        "tag": "COPAY"
+      },
+      {
+        "clause_id": "SEC-6.1",
+        "section": "Section 6 - Cashless Claim Administration",
+        "page_number": 21,
+        "clause_title": "Cashless Settlement and Emergency Turnaround",
+        "exact_text": "Immediate emergency admission approval within 1 hour of complete document receipt at the cashless desk. Intimation window for emergency hospitalisation is 24 hours.",
+        "tag": "PREAUTH"
+      }
+    ]
+  },
+  {
+    "id": "care_health_advantage",
+    "insurer_name": "Care Health Insurance",
+    "policy_name": "Care Advantage 25L Comprehensive",
+    "policy_type": "High Sum Insured Health Cover",
+    "sum_insured": 2500000.0,
+    "room_limit": {
+      "capped_amount_per_day": 8000.0,
+      "percentage_of_sum_insured": null,
+      "no_room_rent_capping": false,
+      "allowed_room_category": "Single Private AC Room",
+      "proportionate_deduction_applies": true,
+      "citation": {
+        "clause_id": "SEC-4.1.2",
+        "section": "Part II - In-Patient Hospitalisation Terms",
+        "page_number": 11,
+        "clause_title": "Room Category Cap - Single Private Room",
+        "exact_text": "Eligibility is up to a Single Private Room with standard amenities. In case of admission to a Suite or Deluxe room exceeding standard single private tariff, the claim for associated medical and surgical expenses shall be adjusted in proportion to the allowed tariff.",
+        "tag": "ROOM_LIMIT"
+      }
+    },
+    "icu_limit_per_day": 16000.0,
+    "copay": {
+      "standard_percentage": 0.0,
+      "senior_citizen_percentage": 10.0,
+      "zone_based_copay": 10.0,
+      "citation": {
+        "clause_id": "SEC-6.3",
+        "section": "Part IV - Geographic & Age Co-payment",
+        "page_number": 19,
+        "clause_title": "Zone B Treatment Co-payment & Senior Copay",
+        "exact_text": "A 10% co-payment applies if the insured residing in Zone B is treated in a Zone A Metro hospital, or if the patient is aged 65 years or above.",
+        "tag": "COPAY"
+      }
+    },
+    "pre_auth": {
+      "emergency_window_hours": 24,
+      "planned_window_hours": 48,
+      "citation": {
+        "clause_id": "SEC-8.1",
+        "section": "Part VI - Cashless Empanelment",
+        "page_number": 28,
+        "clause_title": "Cashless TPA Pre-Authorization",
+        "exact_text": "Pre-authorization request should be dispatched to Care Health TPA desk at the hospital within 24 hours of emergency admission.",
+        "tag": "PREAUTH"
+      }
+    },
+    "has_consumables_rider": false,
+    "empanelled_tpas": ["Care Health TPA", "Vidal Health", "Paramount Health TPA"],
+    "waiting_periods": [
+      {
+        "type": "Initial Waiting Period",
+        "duration": "30 Days",
+        "description": "30 days for general illnesses.",
+        "page": 7
+      },
+      {
+        "type": "Named Ailments",
+        "duration": "24 Months",
+        "description": "Standard listed treatments covered after 24 months.",
+        "page": 8
+      }
+    ],
+    "key_exclusions": [
+      "Non-medical hygiene disposables",
+      "Alternative therapies (AYUSH) outside government recognized institutes",
+      "Experimental drug protocols not approved by DCGI"
+    ],
+    "all_citations": [
+      {
+        "clause_id": "SEC-4.1.2",
+        "section": "Part II - In-Patient Hospitalisation Terms",
+        "page_number": 11,
+        "clause_title": "Room Category Cap - Single Private Room",
+        "exact_text": "Eligibility is up to a Single Private Room with standard amenities. In case of admission to a Suite or Deluxe room exceeding standard single private tariff, the claim for associated medical and surgical expenses shall be adjusted in proportion to the allowed tariff.",
+        "tag": "ROOM_LIMIT"
+      },
+      {
+        "clause_id": "SEC-6.3",
+        "section": "Part IV - Geographic & Age Co-payment",
+        "page_number": 19,
+        "clause_title": "Zone B Treatment Co-payment & Senior Copay",
+        "exact_text": "A 10% co-payment applies if the insured residing in Zone B is treated in a Zone A Metro hospital, or if the patient is aged 65 years or above.",
+        "tag": "COPAY"
+      },
+      {
+        "clause_id": "SEC-8.1",
+        "section": "Part VI - Cashless Empanelment",
+        "page_number": 28,
+        "clause_title": "Cashless TPA Pre-Authorization",
+        "exact_text": "Pre-authorization request should be dispatched to Care Health TPA desk at the hospital within 24 hours of emergency admission.",
+        "tag": "PREAUTH"
+      }
+    ]
+  }
+]

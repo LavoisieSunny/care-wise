@@ -1,0 +1,1 @@
+"""CareWise Pydantic Schemas Package."""

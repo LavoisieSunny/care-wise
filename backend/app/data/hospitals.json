@@ -1,0 +1,201 @@
+[
+  {
+    "id": "hosp_sanjeevani",
+    "name": "Sanjeevani Multispeciality Hospital",
+    "tagline": "Trusted Cashless Centre with Full Insurance Desk",
+    "city": "Bengaluru",
+    "locality": "Indiranagar, 100ft Road",
+    "distance_km": 2.4,
+    "rating": 4.7,
+    "reviews_count": 1420,
+    "emergency_contact": "+91 80 4122 8899",
+    "emergency_24x7": true,
+    "specialties": [
+      "Cardiology",
+      "Emergency ICU",
+      "Orthopedics",
+      "General Surgery",
+      "Pediatrics"
+    ],
+    "empanelled_tpas": [
+      "Star Health In-House TPA",
+      "Medi Assist",
+      "Vidal Health",
+      "HDFC ERGO In-House Cashless",
+      "Care Health TPA"
+    ],
+    "network_status": "CASHLESS_NETWORK",
+    "bed_availability": {
+      "icu": 5,
+      "general": 18,
+      "single_private": 7,
+      "deluxe": 2,
+      "status": "AVAILABLE"
+    },
+    "room_tariffs": {
+      "general": 2200.0,
+      "twin_sharing": 4200.0,
+      "single_private": 4900.0,
+      "deluxe_suite": 7800.0
+    },
+    "estimated_ambulance_eta_mins": 12
+  },
+  {
+    "id": "hosp_city_heart",
+    "name": "City Heart Institute & Critical Care",
+    "tagline": "Advanced Cardiac & Surgical Centre",
+    "city": "Bengaluru",
+    "locality": "Old Airport Road",
+    "distance_km": 4.1,
+    "rating": 4.8,
+    "reviews_count": 2180,
+    "emergency_contact": "+91 80 6711 0022",
+    "emergency_24x7": true,
+    "specialties": [
+      "Cardiology",
+      "Cardiac Surgery",
+      "Emergency ICU",
+      "Vascular Surgery"
+    ],
+    "empanelled_tpas": [
+      "Star Health In-House TPA",
+      "Medi Assist",
+      "Vidal Health",
+      "FHPL",
+      "HDFC ERGO In-House Cashless"
+    ],
+    "network_status": "CASHLESS_NETWORK",
+    "bed_availability": {
+      "icu": 3,
+      "general": 8,
+      "single_private": 4,
+      "deluxe": 6,
+      "status": "AVAILABLE"
+    },
+    "room_tariffs": {
+      "general": 3500.0,
+      "twin_sharing": 6200.0,
+      "single_private": 8500.0,
+      "deluxe_suite": 14000.0
+    },
+    "estimated_ambulance_eta_mins": 18
+  },
+  {
+    "id": "hosp_carewell",
+    "name": "Carewell Hospital & Diagnostic Centre",
+    "tagline": "Boutique Hospital - Out of Network for Cashless",
+    "city": "Bengaluru",
+    "locality": "Koramangala 4th Block",
+    "distance_km": 3.8,
+    "rating": 4.2,
+    "reviews_count": 890,
+    "emergency_contact": "+91 80 2553 4400",
+    "emergency_24x7": true,
+    "specialties": [
+      "General Medicine",
+      "General Surgery",
+      "Orthopedics",
+      "Pediatrics"
+    ],
+    "empanelled_tpas": [],
+    "network_status": "NON_NETWORK",
+    "bed_availability": {
+      "icu": 2,
+      "general": 12,
+      "single_private": 5,
+      "deluxe": 3,
+      "status": "AVAILABLE"
+    },
+    "room_tariffs": {
+      "general": 2800.0,
+      "twin_sharing": 5000.0,
+      "single_private": 7200.0,
+      "deluxe_suite": 11500.0
+    },
+    "estimated_ambulance_eta_mins": 15
+  },
+  {
+    "id": "hosp_apex_trauma",
+    "name": "Apex Emergency & Trauma Care",
+    "tagline": "24/7 Level-1 Emergency & Stroke Unit",
+    "city": "Bengaluru",
+    "locality": "HAL 2nd Stage",
+    "distance_km": 1.8,
+    "rating": 4.9,
+    "reviews_count": 3410,
+    "emergency_contact": "+91 80 9900 2211",
+    "emergency_24x7": true,
+    "specialties": [
+      "Emergency ICU",
+      "Trauma Surgery",
+      "Cardiology",
+      "Neurology",
+      "Orthopedics"
+    ],
+    "empanelled_tpas": [
+      "Star Health In-House TPA",
+      "Medi Assist",
+      "Vidal Health",
+      "FHPL",
+      "HDFC ERGO In-House Cashless",
+      "Care Health TPA",
+      "Paramount Health TPA"
+    ],
+    "network_status": "CASHLESS_NETWORK",
+    "bed_availability": {
+      "icu": 8,
+      "general": 25,
+      "single_private": 11,
+      "deluxe": 4,
+      "status": "AVAILABLE"
+    },
+    "room_tariffs": {
+      "general": 2000.0,
+      "twin_sharing": 3800.0,
+      "single_private": 4800.0,
+      "deluxe_suite": 7500.0
+    },
+    "estimated_ambulance_eta_mins": 9
+  },
+  {
+    "id": "hosp_fortis_care",
+    "name": "Fortis Super Speciality Centre",
+    "tagline": "Quaternary Care Hospital with Dedicated TPA Lounge",
+    "city": "Bengaluru",
+    "locality": "Bannerghatta Road",
+    "distance_km": 8.5,
+    "rating": 4.8,
+    "reviews_count": 5200,
+    "emergency_contact": "+91 80 6621 4444",
+    "emergency_24x7": true,
+    "specialties": [
+      "Cardiology",
+      "Orthopedics",
+      "Neurology",
+      "Emergency ICU",
+      "Oncology"
+    ],
+    "empanelled_tpas": [
+      "Medi Assist",
+      "Vidal Health",
+      "FHPL",
+      "HDFC ERGO In-House Cashless",
+      "Care Health TPA"
+    ],
+    "network_status": "CASHLESS_NETWORK",
+    "bed_availability": {
+      "icu": 4,
+      "general": 15,
+      "single_private": 8,
+      "deluxe": 5,
+      "status": "AVAILABLE"
+    },
+    "room_tariffs": {
+      "general": 3800.0,
+      "twin_sharing": 6800.0,
+      "single_private": 9200.0,
+      "deluxe_suite": 15500.0
+    },
+    "estimated_ambulance_eta_mins": 25
+  }
+]
