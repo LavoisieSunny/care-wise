@@ -29,6 +29,20 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
   isUploading,
 }) => {
   const [selectedTag, setSelectedTag] = useState<string>('ALL');
+  const [flashingIdx, setFlashingIdx] = useState<number | null>(null);
+
+  // Field-by-field fill animation when policy updates (Phase 3)
+  React.useEffect(() => {
+    if (!policy) return;
+    const timeouts = [0, 1, 2, 3].map((idx) => {
+      return setTimeout(() => {
+        setFlashingIdx(idx);
+        setTimeout(() => setFlashingIdx(null), 700);
+      }, idx * 150);
+    });
+    return () => timeouts.forEach(clearTimeout);
+  }, [policy?.id]);
+
 
   if (!policy) {
     return <div className="glass-panel" style={{ padding: '40px', textAlign: 'center' }}>Loading policy data...</div>;
@@ -100,7 +114,7 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
       <div className="policy-metrics-grid">
         {/* Metric 1: Sum Insured */}
         <div
-          className={`metric-card ${activeCitation?.tag === 'SUM_INSURED' ? 'highlighted' : ''}`}
+          className={`metric-card ${activeCitation?.tag === 'SUM_INSURED' ? 'highlighted' : ''} ${flashingIdx === 0 ? 'autofill-flash' : ''}`}
           onClick={() => {
             const cit = policy.all_citations.find((c) => c.tag === 'SUM_INSURED') || policy.all_citations[0];
             if (cit) onCitationClick(cit);
@@ -113,13 +127,18 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
           <div className="metric-value">₹{(policy.sum_insured / 100000).toFixed(1)} Lakhs</div>
           <div className="metric-sub">Base Inpatient Coverage</div>
           <div className="citation-badge">
-            <Sparkles size={11} /> Page 1 Verified
+            <Sparkles size={11} /> Page {policy.all_citations[0]?.page_number || 1} Verified
           </div>
+          {policy.all_citations[0]?.confidence !== undefined && policy.all_citations[0].confidence < 0.85 && (
+            <div className="confidence-chip-low">
+              <span>⚠️ Low confidence ({Math.round(policy.all_citations[0].confidence * 100)}%) - Please verify</span>
+            </div>
+          )}
         </div>
 
         {/* Metric 2: Room Rent Limit & Proportionate Risk */}
         <div
-          className={`metric-card ${activeCitation?.tag === 'ROOM_LIMIT' ? 'highlighted' : ''}`}
+          className={`metric-card ${activeCitation?.tag === 'ROOM_LIMIT' ? 'highlighted' : ''} ${flashingIdx === 1 ? 'autofill-flash' : ''}`}
           style={{ borderLeft: policy.room_limit.no_room_rent_capping ? '3px solid #10B981' : '3px solid #F59E0B' }}
           onClick={() => {
             if (policy.room_limit.citation) onCitationClick(policy.room_limit.citation);
@@ -144,11 +163,16 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
               <Sparkles size={11} /> Page {policy.room_limit.citation.page_number} • Clause {policy.room_limit.citation.clause_id}
             </div>
           )}
+          {policy.room_limit.citation?.confidence !== undefined && policy.room_limit.citation.confidence < 0.85 && (
+            <div className="confidence-chip-low">
+              <span>⚠️ Low confidence - Review room terms</span>
+            </div>
+          )}
         </div>
 
         {/* Metric 3: Co-payment */}
         <div
-          className={`metric-card ${activeCitation?.tag === 'COPAY' ? 'highlighted' : ''}`}
+          className={`metric-card ${activeCitation?.tag === 'COPAY' ? 'highlighted' : ''} ${flashingIdx === 2 ? 'autofill-flash' : ''}`}
           onClick={() => {
             if (policy.copay.citation) onCitationClick(policy.copay.citation);
           }}
@@ -172,11 +196,16 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
               <Sparkles size={11} /> Page {policy.copay.citation.page_number} • Clause {policy.copay.citation.clause_id}
             </div>
           )}
+          {policy.copay.citation?.confidence !== undefined && policy.copay.citation.confidence < 0.85 && (
+            <div className="confidence-chip-low">
+              <span>⚠️ Low confidence - Check senior clause</span>
+            </div>
+          )}
         </div>
 
         {/* Metric 4: Pre-Auth Emergency Window */}
         <div
-          className={`metric-card ${activeCitation?.tag === 'PREAUTH' ? 'highlighted' : ''}`}
+          className={`metric-card ${activeCitation?.tag === 'PREAUTH' ? 'highlighted' : ''} ${flashingIdx === 3 ? 'autofill-flash' : ''}`}
           onClick={() => {
             if (policy.pre_auth.citation) onCitationClick(policy.pre_auth.citation);
           }}
@@ -194,6 +223,7 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
           )}
         </div>
       </div>
+
 
       {/* Grounded Policy Document Viewer (Figure 3 in pitch deck) */}
       <div className="doc-viewer-panel">

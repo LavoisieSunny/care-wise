@@ -8,6 +8,7 @@ class ClauseCitation(BaseModel):
     clause_title: str
     exact_text: str
     tag: str = "TERMS"
+    confidence: float = 1.0
 
 class PolicyRoomLimit(BaseModel):
     capped_amount_per_day: Optional[float] = None
@@ -54,3 +55,5 @@ class PolicyUploadResponse(BaseModel):
     policy: PolicyDetails
     pages_processed: int
     confidence_score: float
+    upload_id: Optional[str] = None
+    extraction_mode: Optional[str] = "quick"

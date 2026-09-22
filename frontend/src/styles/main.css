@@ -520,3 +520,118 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+/* ================= Real PDF Viewer Styles ================= */
+.real-pdf-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #080d1a;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  max-height: 520px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.real-pdf-container .react-pdf__Document {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.real-pdf-container .react-pdf__Page {
+  margin-bottom: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.real-pdf-container .react-pdf__Page canvas {
+  display: block;
+  max-width: 100%;
+  height: auto !important;
+  border-radius: 4px;
+}
+
+/* Custom Highlight on PDF Text Layer */
+.react-pdf__Page__textContent {
+  line-height: 1;
+}
+
+.react-pdf__Page__textContent mark,
+mark.pdf-highlight-glow {
+  background: rgba(254, 240, 138, 0.45) !important;
+  color: #fef08a !important;
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.8), inset 0 0 4px rgba(234, 179, 8, 0.6) !important;
+  border-radius: 3px !important;
+  padding: 1px 3px !important;
+  border-bottom: 2px solid #eab308 !important;
+  animation: pulse-glow 1.5s infinite alternate;
+}
+
+.pdf-loading-state,
+.pdf-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 16px;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+/* Autofill Stagger Flash Effect */
+@keyframes metricAutofillPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(6, 182, 212, 0);
+    border-color: var(--border-subtle);
+  }
+  30% {
+    transform: scale(1.03);
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.65), inset 0 0 10px rgba(6, 182, 212, 0.25);
+    border-color: #06b6d4;
+    background: rgba(6, 182, 212, 0.12);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(6, 182, 212, 0);
+    border-color: var(--border-subtle);
+  }
+}
+
+.autofill-flash {
+  animation: metricAutofillPulse 1.2s ease-in-out;
+}
+
+.autofill-review-banner {
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.18), rgba(37, 99, 235, 0.18));
+  border: 1px solid rgba(6, 182, 212, 0.4);
+  color: #e0f2fe;
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.confidence-chip-low {
+  font-size: 0.66rem;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+

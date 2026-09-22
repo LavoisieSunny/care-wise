@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Optional
 from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -8,6 +8,13 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"
+    
+    # LLM Settings
+    ANTHROPIC_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = None
+    OLLAMA_BASE_URL: Optional[str] = "http://localhost:11434"
+    LLM_TIMEOUT_SECONDS: float = 12.0
     
     # CORS settings
     BACKEND_CORS_ORIGINS: List[str] = [

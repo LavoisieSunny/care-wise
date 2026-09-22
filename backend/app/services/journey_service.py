@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from app.schemas.journey import (
     JourneyStatusResponse,
     JourneyStageDetail,
@@ -9,19 +9,61 @@ from app.schemas.journey import (
     AdvanceJourneyRequest,
     ClaimDossierResponse
 )
+from app.schemas.policy import PolicyDetails
+from app.services.policy_service import policy_service
+
 
 class JourneyService:
     def __init__(self):
         self._current_stage_id = "admission"
         self._patient_name = "Ramesh Sharma (Age 58)"
         self._hospital_name = "Sanjeevani Multispeciality Hospital"
-        self._policy_name = "Star Health Family Health Optima (₹5,00,000 SI)"
         self._admission_number = "ADM-2026-89410"
-        self._pre_auth_approved = 75000.0
-        self._current_interim_bill = 62000.0
-        self._estimated_oop = 4500.0
 
-    def get_status(self) -> JourneyStatusResponse:
+    def _resolve_policy(self, policy_id: Optional[str]) -> PolicyDetails:
+        if policy_id:
+            pol = policy_service.get_policy(policy_id)
+            if pol:
+                return pol
+        pols = policy_service.list_policies()
+        return pols[0] if pols else None
+
+    def get_status(self, policy_id: Optional[str] = None) -> JourneyStatusResponse:
+        policy = self._resolve_policy(policy_id)
+        if not policy:
+            raise ValueError("No policies available to derive journey.")
+
+        sum_insured = policy.sum_insured
+        room_cap = policy.room_limit.capped_amount_per_day or (sum_insured * 0.01)
+        no_room_cap = policy.room_limit.no_room_rent_capping
+        category = policy.room_limit.allowed_room_category
+        copay_senior = policy.copay.senior_citizen_percentage
+        notice_hours = policy.pre_auth.emergency_window_hours
+        tpa_name = policy.empanelled_tpas[0] if policy.empanelled_tpas else "Medi Assist TPA"
+
+        # Dynamically scale pre-auth sanction to policy sum insured
+        pre_auth_approved = min(175000.0, max(50000.0, sum_insured * 0.15))
+        
+        # Scale interim bills according to current stage
+        if self._current_stage_id == "admission":
+            interim_bill = round(pre_auth_approved * 0.82, 0)
+            oop_est = round(interim_bill * (copay_senior / 100.0), 0) + 3500.0
+        elif self._current_stage_id == "treatment":
+            interim_bill = round(pre_auth_approved * 0.92, 0)
+            oop_est = round(interim_bill * (copay_senior / 100.0), 0) + 5200.0
+        elif self._current_stage_id == "billing":
+            interim_bill = round(pre_auth_approved * 1.25, 0)
+            oop_est = round(interim_bill * (copay_senior / 100.0), 0) + 9800.0
+        else: # discharge
+            interim_bill = round(pre_auth_approved * 1.20, 0)
+            oop_est = round(interim_bill * (copay_senior / 100.0), 0) + 9500.0
+
+        room_tip = (
+            "Any room category is permitted without sub-limit deduction (Clause 2.1)"
+            if no_room_cap
+            else f"Room capped at ₹{room_cap:,.0f}/day ({category}) to prevent proportionate deduction"
+        )
+
         stages = [
             JourneyStageDetail(
                 stage_id="admission",
@@ -29,17 +71,17 @@ class JourneyService:
                 subtitle="Verify cashless eligibility, submit Form A, and obtain initial sanction",
                 status="COMPLETED" if self._current_stage_id in ["treatment", "billing", "discharge"] else "IN_PROGRESS",
                 metrics={
-                    "Pre-Auth Sanction": f"₹{self._pre_auth_approved:,.0f}",
-                    "TPA Status": "Initial Approval Granted (Medi Assist)",
-                    "Admission Mode": "2 AM Emergency",
-                    "Room Allocated": "Standard Twin Sharing (₹4,200/day)"
+                    "Pre-Auth Sanction": f"₹{pre_auth_approved:,.0f}",
+                    "TPA Status": f"Initial Cashless Sanction ({tpa_name})",
+                    "Admission Mode": "Emergency Admission",
+                    "Room Tariff Rule": f"Max ₹{room_cap:,.0f}/day" if not no_room_cap else "No Room Sub-limit"
                 },
                 checklist=[
                     StageChecklistItem(
                         id="chk-1",
-                        task="Submit Policy E-Card & Patient Aadhaar at Cashless Desk",
+                        task=f"Submit {policy.insurer_name} E-Card & Patient Aadhaar at Cashless Desk",
                         completed=True,
-                        tip="Submitted within 24-hr emergency window (Clause SEC-7.4)"
+                        tip=f"Submitted within {notice_hours}-hr emergency window (Source: Page {policy.pre_auth.citation.page_number if policy.pre_auth.citation else 1})"
                     ),
                     StageChecklistItem(
                         id="chk-2",
@@ -49,9 +91,9 @@ class JourneyService:
                     ),
                     StageChecklistItem(
                         id="chk-3",
-                        task="Confirm room tariff is within ₹5,000/day policy cap",
+                        task=f"Confirm room tariff is within policy guidelines",
                         completed=True,
-                        tip="Twin sharing chosen at ₹4,200/day avoids proportionate deduction"
+                        tip=room_tip
                     )
                 ],
                 alerts=[
@@ -59,8 +101,8 @@ class JourneyService:
                         id="alt-1",
                         stage="admission",
                         severity="SUCCESS",
-                        title="Pre-Authorization Approved",
-                        message="Medi Assist TPA has issued initial cashless authorization of ₹75,000. Admission processed under cashless network.",
+                        title="Cashless Authorization Granted",
+                        message=f"{tpa_name} issued initial cashless sanction of ₹{pre_auth_approved:,.0f} under {policy.policy_name}.",
                         timestamp="Admission + 1h 45m"
                     )
                 ]
@@ -71,8 +113,8 @@ class JourneyService:
                 subtitle="Track daily charges, monitor room category, and trigger pre-auth enhancement",
                 status="COMPLETED" if self._current_stage_id in ["billing", "discharge"] else ("IN_PROGRESS" if self._current_stage_id == "treatment" else "UPCOMING"),
                 metrics={
-                    "Current Interim Bill": f"₹{self._current_interim_bill:,.0f}",
-                    "Sanction Utilisation": f"{(self._current_interim_bill / self._pre_auth_approved * 100):.1f}%",
+                    "Current Interim Bill": f"₹{interim_bill:,.0f}",
+                    "Sanction Utilisation": f"{(interim_bill / pre_auth_approved * 100):.1f}%",
                     "Days Inpatient": "Day 2 of 3",
                     "Consumables Accumulated": "₹3,400"
                 },
@@ -85,9 +127,9 @@ class JourneyService:
                     ),
                     StageChecklistItem(
                         id="chk-5",
-                        task="Request Pre-Auth Enhancement before bill exceeds ₹75,000",
+                        task=f"Request Pre-Auth Enhancement before bill exceeds ₹{pre_auth_approved:,.0f}",
                         completed=self._current_stage_id in ["billing", "discharge"],
-                        tip="Prevents sudden cashless hold during catheterization/stenting"
+                        tip="Prevents sudden cashless hold during intermediate procedures"
                     )
                 ],
                 alerts=[
@@ -95,8 +137,8 @@ class JourneyService:
                         id="alt-2",
                         stage="treatment",
                         severity="WARNING",
-                        title="Enhancement Required Soon",
-                        message="Interim bill has reached 82% of initial pre-auth. CareWise recommends asking hospital desk to submit Enhancement Form.",
+                        title="Enhancement Recommended",
+                        message=f"Interim bill has reached 82% of ₹{pre_auth_approved:,.0f} sanction. Ask TPA desk to submit Enhancement Form.",
                         timestamp="Day 2, 14:30",
                         action_label="Trigger Enhancement Notice",
                         action_type="ENHANCEMENT"
@@ -109,9 +151,9 @@ class JourneyService:
                 subtitle="Review draft bill, detect disallowed charges, and eliminate billing errors",
                 status="COMPLETED" if self._current_stage_id == "discharge" else ("IN_PROGRESS" if self._current_stage_id == "billing" else "UPCOMING"),
                 metrics={
-                    "Hospital Draft Bill": "₹1,85,000",
-                    "TPA Approved Cashless": "₹1,68,500",
-                    "Disallowed Non-Medical": "₹12,000",
+                    "Hospital Draft Bill": f"₹{interim_bill:,.0f}",
+                    "TPA Approved Cashless": f"₹{(interim_bill * 0.90):,.0f}",
+                    "Disallowed Non-Medical": "₹8,500",
                     "CareWise Audit Savings": "₹4,500 (Duplicate syringe/glove charge removed)"
                 },
                 checklist=[
@@ -134,7 +176,7 @@ class JourneyService:
                         stage="billing",
                         severity="INFO",
                         title="AI Bill Audit Complete",
-                        message="Draft bill audited against Star Health IRDAI guidelines. ₹4,500 in unjustified consumable surcharges successfully contested.",
+                        message=f"Draft bill audited against {policy.insurer_name} IRDAI guidelines. Non-medical surcharges successfully contested.",
                         timestamp="Day 3, 10:15"
                     )
                 ]
@@ -145,9 +187,9 @@ class JourneyService:
                 subtitle="Final cashless settlement confirmation and instant claim archive",
                 status="IN_PROGRESS" if self._current_stage_id == "discharge" else "UPCOMING",
                 metrics={
-                    "Final Hospital Bill": "₹1,80,500",
-                    "Cashless Paid by Insurer": "₹1,71,000",
-                    "Caregiver Final Payment": "₹9,500 (Non-medical items only)",
+                    "Final Hospital Bill": f"₹{interim_bill:,.0f}",
+                    "Cashless Paid by Insurer": f"₹{(interim_bill - oop_est):,.0f}",
+                    "Caregiver Final Payment": f"₹{oop_est:,.0f} (Co-pay + non-medical)",
                     "Discharge Summary": "Signed & Archived"
                 },
                 checklist=[
@@ -176,7 +218,7 @@ class JourneyService:
                         stage="discharge",
                         severity="SUCCESS",
                         title="Cashless Settlement Finalized",
-                        message="Insurer has disbursed ₹1,71,000 directly to hospital. Total caregiver out-of-pocket kept under ₹10,000!",
+                        message=f"Insurer has disbursed ₹{(interim_bill - oop_est):,.0f} directly to hospital. Zero debt remaining!",
                         timestamp="Day 3, 16:45"
                     )
                 ]
@@ -191,36 +233,112 @@ class JourneyService:
         return JourneyStatusResponse(
             patient_name=self._patient_name,
             hospital_name=self._hospital_name,
-            policy_name=self._policy_name,
+            policy_name=policy.policy_name,
             admission_number=self._admission_number,
             current_stage_id=self._current_stage_id,
-            pre_auth_approved_amount=self._pre_auth_approved,
-            current_interim_bill=self._current_interim_bill,
-            out_of_pocket_estimated=self._estimated_oop,
+            pre_auth_approved_amount=pre_auth_approved,
+            current_interim_bill=interim_bill,
+            out_of_pocket_estimated=oop_est,
             stages=stages,
             active_alerts=active_alerts
         )
 
+    def get_decision_guidance(
+        self,
+        policy_id: Optional[str] = None,
+        selected_room: str = "twin_sharing",
+        selected_procedure: str = "angioplasty",
+        emergency_mode: bool = False
+    ) -> Dict[str, Any]:
+        """AI Recommendation & Justification Engine for Column 3 banner."""
+        policy = self._resolve_policy(policy_id)
+        room_cap = policy.room_limit.capped_amount_per_day or (policy.sum_insured * 0.01)
+        no_room_cap = policy.room_limit.no_room_rent_capping
+        category = policy.room_limit.allowed_room_category
+        notice_hours = policy.pre_auth.emergency_window_hours
+        copay_pct = policy.copay.senior_citizen_percentage
+
+        # Evaluate proportionate deduction risk
+        room_costs = {
+            "twin_sharing": 6200.0,
+            "single_private": 8500.0,
+            "deluxe_suite": 14000.0
+        }
+        actual_tariff = room_costs.get(selected_room, 6200.0)
+        is_breached = (not no_room_cap) and (actual_tariff > room_cap)
+
+        if is_breached:
+            penalty_ratio = (actual_tariff - room_cap) / actual_tariff
+            estimated_penalty = round(110000.0 * penalty_ratio, 0)
+            return {
+                "headline": "⚠️ Proportionate Deduction Risk Active!",
+                "justification": (
+                    f"Selected room ({selected_room.replace('_', ' ').title()} @ ₹{actual_tariff:,.0f}/day) "
+                    f"exceeds policy cap of ₹{room_cap:,.0f}/day. The insurer will proportionately cut "
+                    f"doctor visit and OT surgeon charges by ~{penalty_ratio * 100:.0f}%, adding an extra ₹{estimated_penalty:,.0f} to your discharge bill."
+                ),
+                "priority": "CRITICAL",
+                "action_label": "Switch to Twin Sharing (Safe)",
+                "action_type": "SWITCH_ROOM",
+                "recommended_room": "twin_sharing",
+                "badge": "OVER-LIMIT DETECTED",
+                "badge_color": "#f43f5e"
+            }
+
+        if emergency_mode:
+            return {
+                "headline": f"🚨 2 AM Emergency Protocol Active",
+                "justification": (
+                    f"Patient admitted via emergency. Hand over {policy.insurer_name} policy number to cashless desk. "
+                    f"You have strictly {notice_hours} hours from admission to submit Pre-Auth Form A without penalty (Source: Page {policy.pre_auth.citation.page_number if policy.pre_auth.citation else 1})."
+                ),
+                "priority": "WARNING",
+                "action_label": "Verify Pre-Auth Window",
+                "action_type": "INTIMATE_PREAUTH",
+                "badge": f"{notice_hours}H DEADLINE",
+                "badge_color": "#f59e0b"
+            }
+
+        if copay_pct > 0:
+            return {
+                "headline": f"📋 Senior Co-Payment Condition Applies",
+                "justification": (
+                    f"For patient aged 61+, {policy.policy_name} enforces a mandatory {copay_pct:.0f}% co-payment "
+                    f"on all admissible hospital charges (Source: Page {policy.copay.citation.page_number if policy.copay.citation else 2}). "
+                    f"Room is safely within limit, avoiding additional proportionate penalties."
+                ),
+                "priority": "RECOMMENDED",
+                "action_label": "Review Out-of-Pocket Breakdown",
+                "action_type": "REVIEW_COPAY",
+                "badge": f"{copay_pct:.0f}% CO-PAY",
+                "badge_color": "#38bdf8"
+            }
+
+        return {
+            "headline": "✅ Optimal Cashless Configuration",
+            "justification": (
+                f"Selected room tariff is within eligible policy parameters ({'No capping' if no_room_cap else f'Under ₹{room_cap:,.0f}/day cap'}). "
+                f"Zero proportionate cuts will be applied to surgeon or OT fees. 100% cashless pre-auth path is active."
+            ),
+            "priority": "SUCCESS",
+            "action_label": "Audit Final Bill Surcharges",
+            "action_type": "AUDIT_BILL",
+            "badge": "ZERO PENALTY",
+            "badge_color": "#10b981"
+        }
+
     def advance_stage(self, req: AdvanceJourneyRequest) -> JourneyStatusResponse:
         self._current_stage_id = req.target_stage_id
-        if req.target_stage_id == "treatment":
-            self._current_interim_bill = 68000.0
-        elif req.target_stage_id == "billing":
-            self._current_interim_bill = 185000.0
-            self._pre_auth_approved = 168500.0
-        elif req.target_stage_id == "discharge":
-            self._current_interim_bill = 180500.0
-            self._pre_auth_approved = 171000.0
-            self._estimated_oop = 9500.0
         return self.get_status()
 
-    def generate_dossier(self) -> ClaimDossierResponse:
+    def generate_dossier(self, policy_id: Optional[str] = None) -> ClaimDossierResponse:
+        policy = self._resolve_policy(policy_id)
         return ClaimDossierResponse(
             dossier_id=f"CW-DOS-{uuid.uuid4().hex[:8].upper()}",
             generated_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             patient_name=self._patient_name,
             hospital_name=self._hospital_name,
-            policy_number="STAR-FHO-2024-99812",
+            policy_number=f"POL-{policy.id.upper()[:12]}-2026",
             total_bill=180500.0,
             cashless_sanctioned=171000.0,
             copay_settled=0.0,
@@ -234,7 +352,9 @@ class JourneyService:
                 "Implant Invoice & Barcode Sticker (Drug Eluting Stent)"
             ],
             tpa_submission_code="TPA-MED-889921",
-            summary_text="CareWise protected the family from a potential ₹75,000 proportionate deduction bill shock by recommending a Twin Sharing room and actively auditing non-medical charges."
+            summary_text=f"CareWise protected the family under {policy.policy_name} by preventing proportionate deduction traps and actively auditing non-medical surcharges."
         )
 
+
 journey_service = JourneyService()
+

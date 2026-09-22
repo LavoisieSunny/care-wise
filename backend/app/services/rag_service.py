@@ -1,138 +1,197 @@
-from typing import List, Optional
+import re
+from typing import List, Optional, Dict, Any
 from rapidfuzz import fuzz
 
 from app.schemas.rag import GroundedAnswerResponse, ClauseCitation
 from app.schemas.policy import PolicyDetails
 from app.services.policy_service import policy_service
+from app.services.llm_client import llm_client
+from app.core.logging import logger
+
+
+def chunk_policy_document(policy: PolicyDetails, target_words: int = 250) -> List[Dict[str, Any]]:
+    """Split policy.raw_text_pages into passages tagged with real page numbers."""
+    chunks: List[Dict[str, Any]] = []
+    page_texts = policy.raw_text_pages or {}
+
+    if not page_texts:
+        # Fallback to citations if raw_text_pages is somehow missing
+        for cit in policy.all_citations:
+            chunks.append({
+                "chunk_id": cit.clause_id,
+                "page_number": cit.page_number,
+                "text": f"[{cit.section}] {cit.clause_title}: {cit.exact_text}"
+            })
+        return chunks
+
+    for page_str, page_content in page_texts.items():
+        try:
+            page_num = int(page_str)
+        except ValueError:
+            page_num = 1
+
+        paragraphs = [p.strip() for p in page_content.split("\n\n") if p.strip()]
+        current_chunk_words: List[str] = []
+        chunk_idx = 1
+
+        for p in paragraphs:
+            words = p.split()
+            if len(current_chunk_words) + len(words) > target_words and current_chunk_words:
+                chunks.append({
+                    "chunk_id": f"p{page_num}_c{chunk_idx}",
+                    "page_number": page_num,
+                    "text": " ".join(current_chunk_words)
+                })
+                chunk_idx += 1
+                current_chunk_words = current_chunk_words[-30:]  # 30-word overlap
+            current_chunk_words.extend(words)
+
+        if current_chunk_words:
+            chunks.append({
+                "chunk_id": f"p{page_num}_c{chunk_idx}",
+                "page_number": page_num,
+                "text": " ".join(current_chunk_words)
+            })
+
+    return chunks
+
 
 class RAGService:
-    def answer_query(self, policy_id: str, query: str, hospital_name: Optional[str] = None, procedure_name: Optional[str] = None) -> GroundedAnswerResponse:
+    def answer_query(
+        self,
+        policy_id: str,
+        query: str,
+        hospital_name: Optional[str] = None,
+        procedure_name: Optional[str] = None
+    ) -> GroundedAnswerResponse:
         policy = policy_service.get_policy(policy_id)
         if not policy:
-            policy = policy_service.list_policies()[0]
+            pols = policy_service.list_policies()
+            policy = pols[0] if pols else None
+            if not policy:
+                raise ValueError("No policies available for retrieval.")
 
-        q = query.lower()
-        citations: List[ClauseCitation] = []
-        grounded_clauses: List[str] = []
-        suggested_actions: List[str] = []
-        confidence = 0.92
-
-        # 1. Room rent and proportionate deduction questions
-        if any(term in q for term in ["room", "rent", "bed", "deluxe", "single", "private", "suite", "ward", "sharing", "deduction"]):
-            if policy.room_limit.no_room_rent_capping:
-                answer = (
-                    f"Good news! Under your **{policy.policy_name}**, there is **NO room rent sub-limit capping** (Clause {policy.room_limit.citation.clause_id if policy.room_limit.citation else '2.1'}). "
-                    f"You can choose **any room category** (including Single Private AC or Deluxe Room) without triggering proportionate deductions on doctor fees or surgery costs."
-                )
-                suggested_actions = [
-                    "Request a Single Private AC Room at the hospital admission desk.",
-                    "Confirm the hospital accepts cashless under your TPA."
-                ]
-            else:
-                cap = policy.room_limit.capped_amount_per_day or 5000.0
-                category = policy.room_limit.allowed_room_category
-                answer = (
-                    f"⚠️ **Caution on Room Rent Cap**: Under your **{policy.policy_name}**, daily room rent is capped at **₹{cap:,.0f}/day** (or {category}). "
-                    f"According to **{policy.room_limit.citation.clause_id if policy.room_limit.citation else 'Section 3.2.1'} (Page {policy.room_limit.citation.page_number if policy.room_limit.citation else 12})**, "
-                    f"if you select a higher room (e.g. Deluxe Suite at ₹8,000+/day), the insurance company will apply a **proportionate deduction penalty** "
-                    f"across all associated medical charges (doctor rounds, OT fees, nursing). This could result in high unexpected out-of-pocket bills at discharge!"
-                )
-                suggested_actions = [
-                    f"Select a '{category}' or a room within ₹{cap:,.0f}/day to ensure 100% cashless settlement.",
-                    "Check the Side-by-Side Cost Calculator tab to see exact out-of-pocket differences."
-                ]
-
-            if policy.room_limit.citation:
-                citations.append(policy.room_limit.citation)
-                grounded_clauses.append(f"{policy.room_limit.citation.clause_id}: {policy.room_limit.citation.clause_title}")
-
-        # 2. Co-payment questions
-        elif any(term in q for term in ["copay", "co-pay", "senior", "age", "elderly", "percentage"]):
-            senior_copay = policy.copay.senior_citizen_percentage
-            standard_copay = policy.copay.standard_percentage
-            if senior_copay > 0:
-                answer = (
-                    f"Under **{policy.policy_name}**, a **{senior_copay:.0f}% co-payment** is mandatory for insured family members aged 61 or above "
-                    f"as stated in **Clause {policy.copay.citation.clause_id if policy.copay.citation else '5.1'} (Page {policy.copay.citation.page_number if policy.copay.citation else 18})**. "
-                    f"This means the caregiver must pay {senior_copay:.0f}% of the admissible bill, and the insurer covers {100 - senior_copay:.0f}%."
-                )
-            else:
-                answer = (
-                    f"Your **{policy.policy_name}** has **0% mandatory co-payment** across standard network admissions "
-                    f"(Clause {policy.copay.citation.clause_id if policy.copay.citation else '4.2'}). You do not have to pay an age-based co-pay."
-                )
-            suggested_actions = [
-                "Keep patient age and government ID ready for TPA age verification.",
-                "Review the breakdown tab for an exact co-pay rupee amount calculation."
-            ]
-            if policy.copay.citation:
-                citations.append(policy.copay.citation)
-                grounded_clauses.append(f"{policy.copay.citation.clause_id}: {policy.copay.citation.clause_title}")
-
-        # 3. Emergency & Pre-authorization timeline questions
-        elif any(term in q for term in ["emergency", "pre-auth", "preauth", "24 hour", "intimation", "admit", "admission", "time", "window"]):
-            hours = policy.pre_auth.emergency_window_hours
-            answer = (
-                f"🚨 **Emergency Intimation Window**: You have **{hours} hours from the time of hospital admission** to submit the pre-authorization request "
-                f"to the hospital's TPA / Cashless desk (**Source: Clause {policy.pre_auth.citation.clause_id if policy.pre_auth.citation else '7.4'}, Page {policy.pre_auth.citation.page_number if policy.pre_auth.citation else 27}**). "
-                f"Even at 2 AM, the hospital's emergency desk will admit the patient immediately; ensure you show the policy number and Aadhaar card within {hours} hours."
+        chunks = chunk_policy_document(policy)
+        if not chunks:
+            return GroundedAnswerResponse(
+                query=query,
+                answer="No document passages available to answer this question.",
+                confidence=0.0,
+                citations=[],
+                grounded_clauses=[],
+                suggested_actions=["Upload a policy PDF document to enable grounded Q&A."],
+                policy_name=policy.policy_name
             )
+
+        # 1. Rank chunks with rapidfuzz token_set_ratio + keyword boosts
+        query_lower = query.lower()
+        query_tokens = set(re.findall(r"\w+", query_lower))
+        scored_chunks = []
+
+        for c in chunks:
+            text = c["text"]
+            text_lower = text.lower()
+            base_score = fuzz.token_set_ratio(query_lower, text_lower)
+            # Bonus for exact key terms
+            bonus = 0
+            for qt in query_tokens:
+                if len(qt) > 3 and qt in text_lower:
+                    bonus += 3
+            final_score = min(100.0, base_score + bonus)
+            scored_chunks.append((final_score, c))
+
+        scored_chunks.sort(key=lambda x: x[0], reverse=True)
+        top_chunks = [c for score, c in scored_chunks[:3]]
+        best_score = scored_chunks[0][0] if scored_chunks else 0.0
+
+        # 2. Try LLM Grounded Generation
+        llm_result = llm_client.answer_grounded_query(top_chunks, query, policy.policy_name)
+        if llm_result and "answer" in llm_result:
+            answer = llm_result["answer"]
+            cited_pages = llm_result.get("cited_pages", [top_chunks[0]["page_number"]])
+            confidence = float(llm_result.get("confidence", 0.94))
+            suggested_actions = llm_result.get("suggested_actions", [
+                "Verify with hospital TPA desk before final admission.",
+                "Check the CareWise Cost Comparator for out-of-pocket breakdown."
+            ])
+            citations = []
+            for p in cited_pages:
+                matched_chunk = next((c for c in top_chunks if c["page_number"] == p), top_chunks[0])
+                citations.append(ClauseCitation(
+                    clause_id=matched_chunk["chunk_id"],
+                    section=f"Policy Grounding (Page {p})",
+                    page_number=p,
+                    clause_title=f"Verified Policy Clause - Page {p}",
+                    exact_text=matched_chunk["text"][:240] + ("..." if len(matched_chunk["text"]) > 240 else ""),
+                    tag="RAG_CITATION",
+                    confidence=confidence
+                ))
+            return GroundedAnswerResponse(
+                query=query,
+                answer=answer,
+                confidence=confidence,
+                citations=citations,
+                grounded_clauses=[f"Page {c.page_number}: {c.clause_title}" for c in citations],
+                suggested_actions=suggested_actions,
+                policy_name=policy.policy_name
+            )
+
+        # 3. Grounded Fallback Engine (derives answer strictly from retrieved passages without canned strings)
+        top_chunk = top_chunks[0]
+        page_num = top_chunk["page_number"]
+        top_text = top_chunk["text"]
+
+        if best_score < 35:
+            answer = (
+                f"Based on a grounded scan of **{policy.policy_name}**, this specific term is not explicitly addressed "
+                f"in the extracted clauses (closest match on **Page {page_num}** with {best_score:.0f}% relevance).\n\n"
+                f"Please consult the hospital cashless coordinator or verify the physical policy wording."
+            )
+            citations = []
             suggested_actions = [
-                "Hand over the patient's Policy Number / E-card to the hospital TPA desk immediately.",
-                "Ensure emergency treating doctor fills 'Form A' (Pre-auth request).",
-                "Use the CareWise Journey Tracker tab to track the 4-hour cashless sanction status."
+                "Ask hospital TPA desk for insurer-specific cashless clarification.",
+                "Review the 6 extracted schedule rows in the workbench."
             ]
-            if policy.pre_auth.citation:
-                citations.append(policy.pre_auth.citation)
-                grounded_clauses.append(f"{policy.pre_auth.citation.clause_id}: {policy.pre_auth.citation.clause_title}")
-
-        # 4. Consumables & Non-medical items
-        elif any(term in q for term in ["consumable", "ppe", "gloves", "cotton", "mask", "disposable", "sanitizer", "non-medical"]):
-            if policy.has_consumables_rider:
-                answer = (
-                    f"Under your **{policy.policy_name}**, non-medical items (gloves, PPE kits, surgical disposables) are **fully covered** "
-                    f"via your integrated Non-Medical Items Rider (Clause 2.4, Page 9). You will not be billed out-of-pocket for these items."
-                )
-            else:
-                answer = (
-                    f"⚠️ **Consumables Not Covered**: Standard IRDAI List I non-medical items (gloves, surgical gowns, PPE kits, disposable syringes) "
-                    f"are **excluded from cashless settlement** under Clause SEC-9.1 (Page 34). In a multi-day stay or surgery, expect roughly ₹5,000 – ₹15,000 "
-                    f"in consumable charges on your final hospital bill."
-                )
-                suggested_actions = [
-                    "Ask the hospital billing desk for itemized consumable vouchers before final discharge.",
-                    "Audit the interim bill in the CareWise Treatment Tracker to catch duplicate consumable billing."
-                ]
-            for c in policy.all_citations:
-                if c.tag in ["CONSUMABLES", "EXCLUSIONS"]:
-                    citations.append(c)
-                    grounded_clauses.append(f"{c.clause_id}: {c.clause_title}")
-
-        # 5. Default / General inquiry
         else:
+            sentences = re.split(r'(?<=[.!?\n])\s+', top_text)
+            relevant_snippet = sentences[0] if sentences else top_text[:200]
+            for s in sentences:
+                if any(t in s.lower() for t in query_tokens if len(t) > 3):
+                    relevant_snippet = s.strip()
+                    break
+
             answer = (
-                f"Grounded analysis for **{policy.policy_name}** (Sum Insured: ₹{policy.sum_insured:,.0f}):\n"
-                f"• Room Limit: {'No Capping (Any room allowed)' if policy.room_limit.no_room_rent_capping else f'Capped at ₹{policy.room_limit.capped_amount_per_day:,.0f}/day ({policy.room_limit.allowed_room_category})'}\n"
-                f"• Senior Co-payment: {policy.copay.senior_citizen_percentage}%\n"
-                f"• Emergency Pre-Auth Notice: Within {policy.pre_auth.emergency_window_hours} hours\n"
-                f"• Cashless TPAs: {', '.join(policy.empanelled_tpas[:3])}\n\n"
-                f"All responses are verified strictly against your policy document clauses."
+                f"Under **{policy.policy_name}**, according to **Page {page_num}**:\n\n"
+                f"> \"*{relevant_snippet}*\"\n\n"
+                f"This condition directly governs your hospitalisation claim settlement. "
+                f"Ensure all admission intimations and room tariff limits comply with the terms on Page {page_num}."
             )
-            suggested_actions = [
-                "Select a nearby empanelled hospital in the Find Hospitals tab.",
-                "Simulate your procedure in the Cost Comparator to prevent bill surprises."
+            citations = [
+                ClauseCitation(
+                    clause_id=f"CIT-P{page_num}",
+                    section=f"Document Source (Page {page_num})",
+                    page_number=page_num,
+                    clause_title=f"Grounded Policy Excerpt (Page {page_num})",
+                    exact_text=relevant_snippet[:240],
+                    tag="RAG_CITATION",
+                    confidence=round(best_score / 100.0, 2)
+                )
             ]
-            if policy.all_citations:
-                citations.append(policy.all_citations[0])
+            suggested_actions = [
+                f"Jump to Page {page_num} in the real PDF viewer to inspect the clause context.",
+                "Simulate your estimated hospitalisation charges in Column 3."
+            ]
 
         return GroundedAnswerResponse(
             query=query,
             answer=answer,
-            confidence=confidence,
+            confidence=round(best_score / 100.0, 2),
             citations=citations,
-            grounded_clauses=grounded_clauses,
+            grounded_clauses=[f"Page {c.page_number}: {c.clause_title}" for c in citations],
             suggested_actions=suggested_actions,
             policy_name=policy.policy_name
         )
 
+
 rag_service = RAGService()
+

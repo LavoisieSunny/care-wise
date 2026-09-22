@@ -1,5 +1,5 @@
 import api from './client';
-import { PolicyDetails } from '../types/policy';
+import { PolicyDetails, PolicyUploadResponse } from '../types/policy';
 
 export const getPolicies = async (): Promise<PolicyDetails[]> => {
   const res = await api.get<{ policies: PolicyDetails[] }>('/policies');
@@ -11,11 +11,17 @@ export const getPolicy = async (policyId: string): Promise<PolicyDetails> => {
   return res.data;
 };
 
-export const uploadPolicyPDF = async (file: File) => {
+export const uploadPolicyPDF = async (file: File, mode: 'quick' | 'ai' = 'quick'): Promise<PolicyUploadResponse> => {
   const formData = new FormData();
   formData.append('file', file);
-  const res = await api.post('/policies/upload', formData, {
+  const res = await api.post<PolicyUploadResponse>(`/policies/upload?mode=${mode}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return res.data;
 };
+
+export const uploadPolicyDeep = async (uploadId: string): Promise<PolicyUploadResponse> => {
+  const res = await api.post<PolicyUploadResponse>(`/policies/upload/deep?upload_id=${uploadId}`);
+  return res.data;
+};
+

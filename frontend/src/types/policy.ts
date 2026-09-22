@@ -5,6 +5,7 @@ export interface ClauseCitation {
   clause_title: string;
   exact_text: string;
   tag: string;
+  confidence?: number;
 }
 
 export interface PolicyRoomLimit {
@@ -53,3 +54,14 @@ export interface PolicyDetails {
   all_citations: ClauseCitation[];
   raw_text_pages?: Record<string, string>;
 }
+
+export interface PolicyUploadResponse {
+  success: boolean;
+  message: string;
+  policy: PolicyDetails;
+  pages_processed: number;
+  confidence_score: number;
+  upload_id?: string;
+  extraction_mode?: string;
+}
+

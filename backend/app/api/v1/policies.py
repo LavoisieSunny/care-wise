@@ -1,5 +1,5 @@
-from typing import List
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from typing import List, Optional
+from fastapi import APIRouter, UploadFile, File, Query, HTTPException, Body
 from app.schemas.policy import PolicyDetails, PolicyListResponse, PolicyUploadResponse
 from app.services.policy_service import policy_service
 
@@ -20,8 +20,8 @@ async def get_policy(policy_id: str):
     return policy
 
 @router.post("/policies/upload", response_model=PolicyUploadResponse, tags=["Policies"])
-async def upload_policy_pdf(file: UploadFile = File(...)):
-    """Upload an insurance policy document (PDF) to perform AI extraction and grounded citation indexing."""
+async def upload_policy_pdf(file: UploadFile = File(...), mode: str = Query("quick", pattern="^(quick|ai)$")):
+    """Upload an insurance policy document (PDF) to perform fast OCR text and heuristic extraction."""
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF policy documents are currently supported.")
     
@@ -30,7 +30,19 @@ async def upload_policy_pdf(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     try:
-        response = policy_service.parse_pdf(content, file.filename)
+        response = policy_service.parse_pdf(content, file.filename, mode=mode)
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to extract policy text: {str(e)}")
+
+@router.post("/policies/upload/deep", response_model=PolicyUploadResponse, tags=["Policies"])
+async def upload_policy_deep(upload_id: str = Query(...)):
+    """Run deep AI LLM semantic extraction on previously uploaded document using cached page texts."""
+    try:
+        response = policy_service.parse_pdf_deep(upload_id)
+        return response
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed AI deep extraction: {str(e)}")
+
