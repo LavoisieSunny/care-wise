@@ -6,6 +6,7 @@ export const queryRAG = async (params: {
   query: string;
   hospital_name?: string;
   procedure_name?: string;
+  language?: string;
 }): Promise<GroundedAnswerResponse> => {
   const res = await api.post<GroundedAnswerResponse>('/rag/query', params);
   return res.data;

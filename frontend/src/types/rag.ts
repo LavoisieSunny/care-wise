@@ -8,6 +8,7 @@ export interface GroundedAnswerResponse {
   grounded_clauses: string[];
   suggested_actions: string[];
   policy_name: string;
+  language?: string;
 }
 
 export interface ChatMessage {

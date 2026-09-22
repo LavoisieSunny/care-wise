@@ -17,6 +17,8 @@ from app.schemas.policy import (
 from app.services.llm_client import llm_client
 
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "sample_policies.json"
+UPLOADED_DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "uploaded"
+UPLOADED_DATA_PATH.mkdir(parents=True, exist_ok=True)
 
 
 def find_page_and_snippet(page_texts: Dict[str, str], keywords: List[str], fallback_page: int = 1) -> Tuple[int, str]:
@@ -40,6 +42,17 @@ class PolicyService:
         self._policies: Dict[str, PolicyDetails] = {}
         self._upload_cache: Dict[str, Dict[str, Any]] = {}
         self._load_sample_policies()
+
+    def _persist_policy(self, policy: PolicyDetails):
+        """Persist extracted policy to disk so it survives server restarts."""
+        try:
+            UPLOADED_DATA_PATH.mkdir(parents=True, exist_ok=True)
+            target = UPLOADED_DATA_PATH / f"{policy.id}.json"
+            with open(target, "w", encoding="utf-8") as f:
+                f.write(policy.model_dump_json(indent=2))
+            logger.info(f"Persisted policy '{policy.id}' to disk ({target}).")
+        except Exception as e:
+            logger.error(f"Failed to persist policy '{policy.id}': {e}")
 
     def _load_sample_policies(self):
         try:
@@ -66,8 +79,23 @@ class PolicyService:
                         policy = PolicyDetails(**item)
                         self._policies[policy.id] = policy
                 logger.info(f"Loaded {len(self._policies)} sample policies into memory.")
+
+            # Load user uploaded policies persisted to disk
+            if UPLOADED_DATA_PATH.exists():
+                loaded_uploads = 0
+                for json_file in UPLOADED_DATA_PATH.glob("*.json"):
+                    try:
+                        with open(json_file, "r", encoding="utf-8") as f:
+                            item = json.load(f)
+                            policy = PolicyDetails(**item)
+                            self._policies[policy.id] = policy
+                            loaded_uploads += 1
+                    except Exception as e:
+                        logger.warning(f"Could not load persisted policy from {json_file}: {e}")
+                if loaded_uploads > 0:
+                    logger.info(f"Restored {loaded_uploads} user uploaded policies from disk. Total policies: {len(self._policies)}")
         except Exception as e:
-            logger.error(f"Failed to load sample policies: {e}")
+            logger.error(f"Failed to load policies: {e}")
 
     def list_policies(self) -> List[PolicyDetails]:
         return list(self._policies.values())
@@ -392,6 +420,7 @@ class PolicyService:
                 conf = 0.89
 
             self._policies[policy_details.id] = policy_details
+            self._persist_policy(policy_details)
             logger.info(f"Processed uploaded policy '{filename}' ({total_pages} pages, mode={mode}). ID: {policy_details.id}")
 
             return PolicyUploadResponse(
@@ -421,6 +450,7 @@ class PolicyService:
 
         policy_details = self._llm_based_extraction(full_text, page_texts, filename, total_pages)
         self._policies[policy_details.id] = policy_details
+        self._persist_policy(policy_details)
 
         return PolicyUploadResponse(
             success=True,

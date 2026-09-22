@@ -7,6 +7,8 @@ from app.schemas.policy import PolicyDetails
 from app.services.policy_service import policy_service
 from app.services.llm_client import llm_client
 from app.core.logging import logger
+from app.core.redaction import redact
+from app.core.audit_log import record_event
 
 
 def chunk_policy_document(policy: PolicyDetails, target_words: int = 250) -> List[Dict[str, Any]]:
@@ -62,7 +64,8 @@ class RAGService:
         policy_id: str,
         query: str,
         hospital_name: Optional[str] = None,
-        procedure_name: Optional[str] = None
+        procedure_name: Optional[str] = None,
+        language: str = "en"
     ) -> GroundedAnswerResponse:
         policy = policy_service.get_policy(policy_id)
         if not policy:
@@ -73,9 +76,14 @@ class RAGService:
 
         chunks = chunk_policy_document(policy)
         if not chunks:
+            fallback_msg = (
+                "इस प्रश्न का उत्तर देने के लिए कोई दस्तावेज़ उपलब्ध नहीं है।"
+                if language == "hi"
+                else "No document passages available to answer this question."
+            )
             return GroundedAnswerResponse(
                 query=query,
-                answer="No document passages available to answer this question.",
+                answer=fallback_msg,
                 confidence=0.0,
                 citations=[],
                 grounded_clauses=[],
@@ -83,8 +91,18 @@ class RAGService:
                 policy_name=policy.policy_name
             )
 
-        # 1. Rank chunks with rapidfuzz token_set_ratio + keyword boosts
-        query_lower = query.lower()
+        # 1. Redact PII before query leaves service boundary
+        safe_query, redaction_count = redact(query)
+        if redaction_count > 0:
+            record_event(
+                action="rag.query_redacted",
+                target_type="policy",
+                target_id=policy_id,
+                detail={"fields_redacted": redaction_count, "language": language},
+            )
+
+        # 2. Rank chunks with rapidfuzz token_set_ratio + keyword boosts
+        query_lower = safe_query.lower()
         query_tokens = set(re.findall(r"\w+", query_lower))
         scored_chunks = []
 
@@ -92,7 +110,6 @@ class RAGService:
             text = c["text"]
             text_lower = text.lower()
             base_score = fuzz.token_set_ratio(query_lower, text_lower)
-            # Bonus for exact key terms
             bonus = 0
             for qt in query_tokens:
                 if len(qt) > 3 and qt in text_lower:
@@ -104,8 +121,8 @@ class RAGService:
         top_chunks = [c for score, c in scored_chunks[:3]]
         best_score = scored_chunks[0][0] if scored_chunks else 0.0
 
-        # 2. Try LLM Grounded Generation
-        llm_result = llm_client.answer_grounded_query(top_chunks, query, policy.policy_name)
+        # 3. Try LLM Grounded Generation
+        llm_result = llm_client.answer_grounded_query(top_chunks, safe_query, policy.policy_name, language=language)
         if llm_result and "answer" in llm_result:
             answer = llm_result["answer"]
             cited_pages = llm_result.get("cited_pages", [top_chunks[0]["page_number"]])
@@ -136,22 +153,33 @@ class RAGService:
                 policy_name=policy.policy_name
             )
 
-        # 3. Grounded Fallback Engine (derives answer strictly from retrieved passages without canned strings)
+        # 4. Grounded Fallback Engine (derives answer strictly from retrieved passages without canned strings)
         top_chunk = top_chunks[0]
         page_num = top_chunk["page_number"]
         top_text = top_chunk["text"]
 
         if best_score < 35:
-            answer = (
-                f"Based on a grounded scan of **{policy.policy_name}**, this specific term is not explicitly addressed "
-                f"in the extracted clauses (closest match on **Page {page_num}** with {best_score:.0f}% relevance).\n\n"
-                f"Please consult the hospital cashless coordinator or verify the physical policy wording."
-            )
+            if language == "hi":
+                answer = (
+                    f"**{policy.policy_name}** के निकाले गए दस्तावेजों में इस विशिष्ट प्रश्न का सीधा उल्लेख नहीं मिला "
+                    f"(निकटतम मिलान: **पृष्ठ {page_num}**, {best_score:.0f}% प्रासंगिकता)।\n\n"
+                    f"कृपया अस्पताल के टीपीए (TPA) कैशलेस डेस्क से पुष्टि करें या मूल पॉलिसी शब्दों की जांच करें।"
+                )
+                suggested_actions = [
+                    "अस्पताल टीपीए डेस्क से बीमा कैशलेस विवरण स्पष्ट करें।",
+                    "पॉलिसी विवरण तालिका की समीक्षा करें।"
+                ]
+            else:
+                answer = (
+                    f"Based on a grounded scan of **{policy.policy_name}**, this specific term is not explicitly addressed "
+                    f"in the extracted clauses (closest match on **Page {page_num}** with {best_score:.0f}% relevance).\n\n"
+                    f"Please consult the hospital cashless coordinator or verify the physical policy wording."
+                )
+                suggested_actions = [
+                    "Ask hospital TPA desk for insurer-specific cashless clarification.",
+                    "Review the 6 extracted schedule rows in the workbench."
+                ]
             citations = []
-            suggested_actions = [
-                "Ask hospital TPA desk for insurer-specific cashless clarification.",
-                "Review the 6 extracted schedule rows in the workbench."
-            ]
         else:
             sentences = re.split(r'(?<=[.!?\n])\s+', top_text)
             relevant_snippet = sentences[0] if sentences else top_text[:200]
@@ -160,12 +188,29 @@ class RAGService:
                     relevant_snippet = s.strip()
                     break
 
-            answer = (
-                f"Under **{policy.policy_name}**, according to **Page {page_num}**:\n\n"
-                f"> \"*{relevant_snippet}*\"\n\n"
-                f"This condition directly governs your hospitalisation claim settlement. "
-                f"Ensure all admission intimations and room tariff limits comply with the terms on Page {page_num}."
-            )
+            if language == "hi":
+                answer = (
+                    f"**{policy.policy_name}** के अनुसार, **पृष्ठ {page_num}** पर दिया गया है:\n\n"
+                    f"> \"*{relevant_snippet}*\"\n\n"
+                    f"यह शर्त सीधे आपके अस्पताल भर्ती क्लेम निपटान पर लागू होती है। "
+                    f"कृपया सुनिश्चित करें कि कमरा शुल्क और पूर्व-प्राधिकरण (Pre-Auth) सीमाएं पृष्ठ {page_num} के नियमों के अनुरूप हों।"
+                )
+                suggested_actions = [
+                    f"नियम का संदर्भ देखने के लिए पीडीएफ व्यूअर में पृष्ठ {page_num} पर जाएं।",
+                    "कॉलम 3 में अपने अनुमानित अस्पताल खर्च की गणना करें।"
+                ]
+            else:
+                answer = (
+                    f"Under **{policy.policy_name}**, according to **Page {page_num}**:\n\n"
+                    f"> \"*{relevant_snippet}*\"\n\n"
+                    f"This condition directly governs your hospitalisation claim settlement. "
+                    f"Ensure all admission intimations and room tariff limits comply with the terms on Page {page_num}."
+                )
+                suggested_actions = [
+                    f"Jump to Page {page_num} in the real PDF viewer to inspect the clause context.",
+                    "Simulate your estimated hospitalisation charges in Column 3."
+                ]
+
             citations = [
                 ClauseCitation(
                     clause_id=f"CIT-P{page_num}",
@@ -176,10 +221,6 @@ class RAGService:
                     tag="RAG_CITATION",
                     confidence=round(best_score / 100.0, 2)
                 )
-            ]
-            suggested_actions = [
-                f"Jump to Page {page_num} in the real PDF viewer to inspect the clause context.",
-                "Simulate your estimated hospitalisation charges in Column 3."
             ]
 
         return GroundedAnswerResponse(
@@ -194,4 +235,3 @@ class RAGService:
 
 
 rag_service = RAGService()
-

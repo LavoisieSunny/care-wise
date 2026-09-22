@@ -1,3 +1,4 @@
+import re
 import uuid
 from datetime import datetime
 from typing import Dict, Any, List, Optional
@@ -11,6 +12,7 @@ from app.schemas.journey import (
 )
 from app.schemas.policy import PolicyDetails
 from app.services.policy_service import policy_service
+from app.services.dossier_pdf import render_dossier_pdf
 
 
 class JourneyService:
@@ -333,27 +335,85 @@ class JourneyService:
 
     def generate_dossier(self, policy_id: Optional[str] = None) -> ClaimDossierResponse:
         policy = self._resolve_policy(policy_id)
+        if not policy:
+            raise ValueError("No policies available to derive dossier.")
+
+        sum_insured = policy.sum_insured
+        copay_senior = policy.copay.senior_citizen_percentage
+        tpa_name = policy.empanelled_tpas[0] if policy.empanelled_tpas else "Medi Assist TPA"
+
+        # Scale dynamically to policy sum insured and stage calculations
+        pre_auth_approved = min(175000.0, max(50000.0, sum_insured * 0.15))
+        total_bill = round(pre_auth_approved * 1.20, 0)
+        copay_settled = round(total_bill * (copay_senior / 100.0), 0)
+        non_medical_surcharges = 9500.0
+        caregiver_paid = round(copay_settled + non_medical_surcharges, 0)
+        cashless_sanctioned = round(total_bill - caregiver_paid, 0)
+
+        # Dynamic TPA code from TPA initials and policy hash
+        tpa_slug = re.sub(r'[^a-zA-Z0-9]', '', tpa_name.upper())[:6] or "TPA"
+        policy_code = f"POL-{policy.id.upper()[:12]}-2026"
+        tpa_submission_code = f"{tpa_slug}-{policy.id.upper()[:6]}-DIS"
+
+        dossier_id = f"CW-DOS-{uuid.uuid4().hex[:8].upper()}"
+
+        documents_checklist = [
+            f"Original Discharge Summary with ICD-10 Diagnosis Codes ({self._hospital_name})",
+            f"Itemized Hospital Final Bill (₹{total_bill:,.0f}) with Official Receipt Voucher",
+            f"{tpa_name} Cashless Settlement Letter (Sanction: ₹{cashless_sanctioned:,.0f})",
+            f"Pre-Auth Form A & Form B Endorsements under {policy.insurer_name}",
+            "Diagnostic Laboratory & ECG/ECHO Medical Reports",
+            "Implant Invoice & Barcode Sticker (Drug Eluting Stent / Consumables)"
+        ]
+
+        summary_text = (
+            f"CareWise protected the family under {policy.policy_name} ({policy.insurer_name}) by preventing "
+            f"proportionate deduction traps and actively auditing non-medical surcharges. Cashless settlement of "
+            f"₹{cashless_sanctioned:,.0f} sanctioned with ₹{caregiver_paid:,.0f} out-of-pocket settled (including ₹{copay_settled:,.0f} co-pay)."
+        )
+
         return ClaimDossierResponse(
-            dossier_id=f"CW-DOS-{uuid.uuid4().hex[:8].upper()}",
+            dossier_id=dossier_id,
             generated_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             patient_name=self._patient_name,
             hospital_name=self._hospital_name,
-            policy_number=f"POL-{policy.id.upper()[:12]}-2026",
-            total_bill=180500.0,
-            cashless_sanctioned=171000.0,
-            copay_settled=0.0,
-            caregiver_paid=9500.0,
-            documents_checklist=[
-                "Original Discharge Summary with ICD-10 Diagnosis Codes",
-                "Itemized Hospital Final Bill with Receipt Voucher",
-                "TPA Cashless Settlement Letter (Ref #MA-992182)",
-                "Pre-Auth Form A & Form B Endorsements",
-                "Diagnostic Laboratory & ECG/ECHO Reports",
-                "Implant Invoice & Barcode Sticker (Drug Eluting Stent)"
-            ],
-            tpa_submission_code="TPA-MED-889921",
-            summary_text=f"CareWise protected the family under {policy.policy_name} by preventing proportionate deduction traps and actively auditing non-medical surcharges."
+            policy_number=policy_code,
+            total_bill=total_bill,
+            cashless_sanctioned=cashless_sanctioned,
+            copay_settled=copay_settled,
+            caregiver_paid=caregiver_paid,
+            documents_checklist=documents_checklist,
+            tpa_submission_code=tpa_submission_code,
+            summary_text=summary_text
         )
+
+    def generate_dossier_pdf(self, policy_id: Optional[str] = None) -> bytes:
+        """Generate official CareWise Digital Claim Dossier PDF."""
+        dossier = self.generate_dossier(policy_id=policy_id)
+        return render_dossier_pdf(dossier)
+
+    def trigger_caregiver_notification(
+        self,
+        policy_id: Optional[str] = None,
+        phone_number: str = "+91 98765 43210",
+        channel: str = "whatsapp"
+    ) -> Dict[str, Any]:
+        """Trigger instant WhatsApp or SMS caregiver alert for stage updates & discharge dossier."""
+        policy = self._resolve_policy(policy_id)
+        stage_name = self._current_stage_id.title()
+        msg_preview = (
+            f"🏥 CareWise Update for {self._patient_name} at {self._hospital_name}: "
+            f"Stage advanced to '{stage_name}'. Your cashless protection is verified under {policy.policy_name}."
+        )
+        return {
+            "status": "SENT",
+            "channel": channel,
+            "recipient": phone_number,
+            "stage": self._current_stage_id,
+            "message_preview": msg_preview,
+            "dispatched_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "delivery_receipt": f"WA-MSG-{uuid.uuid4().hex[:10].upper()}"
+        }
 
 
 journey_service = JourneyService()

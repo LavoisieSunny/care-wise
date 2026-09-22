@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from app.core.security import verify_demo_key
 from app.api.v1 import (
     health,
     policies,
@@ -9,7 +10,7 @@ from app.api.v1 import (
     sos
 )
 
-api_router = APIRouter()
+api_router = APIRouter(dependencies=[Depends(verify_demo_key)])
 
 api_router.include_router(health.router)
 api_router.include_router(policies.router)

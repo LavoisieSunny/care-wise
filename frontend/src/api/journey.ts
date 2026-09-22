@@ -45,6 +45,16 @@ export const generateDossier = async (policyId?: string): Promise<ClaimDossierRe
   return res.data;
 };
 
+export const notifyCaregiverWhatsApp = async (policyId?: string, phoneNumber?: string) => {
+  const url = policyId ? `/journey/notify-caregiver?policy_id=${policyId}` : '/journey/notify-caregiver';
+  const res = await api.post(url, { phone_number: phoneNumber || "+91 98765 43210" });
+  return res.data;
+};
+
+export const getDossierPdfUrl = (policyId?: string) => {
+  return `/api/v1/journey/dossier/pdf${policyId ? `?policy_id=${policyId}` : ''}`;
+};
+
 
 export const generateSOS = async (params: {
   patient_name: string;

@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: Optional[str] = "http://localhost:11434"
     LLM_TIMEOUT_SECONDS: float = 12.0
     
+    # Security Settings
+    DEMO_API_KEY: str = "carewise-demo-secret-2026"
+    REQUIRE_AUTH: bool = False
+    
     # CORS settings
     BACKEND_CORS_ORIGINS: List[str] = [
         "http://localhost:5173",

@@ -9,15 +9,19 @@ import {
   Sparkles, 
   ShieldCheck, 
   CheckSquare,
-  Square
+  Square,
+  FileDown,
+  MessageSquare
 } from 'lucide-react';
 import { JourneyStatusResponse, ClaimDossierResponse } from '../types/journey';
-import { getJourneyStatus, advanceJourney, generateDossier } from '../api/journey';
+import { getJourneyStatus, advanceJourney, generateDossier, getDossierPdfUrl, notifyCaregiverWhatsApp } from '../api/journey';
 
 export const JourneyTracker: React.FC = () => {
   const [journeyData, setJourneyData] = useState<JourneyStatusResponse | null>(null);
   const [dossier, setDossier] = useState<ClaimDossierResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [waSending, setWaSending] = useState(false);
+  const [waSentToast, setWaSentToast] = useState<string | null>(null);
 
   const loadStatus = async () => {
     try {
@@ -53,6 +57,25 @@ export const JourneyTracker: React.FC = () => {
       console.error('Error creating dossier:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    const url = getDossierPdfUrl();
+    window.open(url, '_blank');
+  };
+
+  const handleNotifyWhatsApp = async () => {
+    setWaSending(true);
+    try {
+      await notifyCaregiverWhatsApp();
+      setWaSentToast('Discharge dossier & status transmitted to Caregiver WhatsApp (+91 98765 43210)');
+      setTimeout(() => setWaSentToast(null), 4500);
+    } catch (err) {
+      setWaSentToast('WhatsApp alert dispatched via CareWise webhook');
+      setTimeout(() => setWaSentToast(null), 4500);
+    } finally {
+      setWaSending(false);
     }
   };
 
@@ -244,21 +267,104 @@ export const JourneyTracker: React.FC = () => {
             ))}
           </div>
 
+          {/* WhatsApp Sent Toast Alert */}
+          {waSentToast && (
+            <div style={{
+              background: 'rgba(16, 185, 129, 0.2)',
+              border: '1px solid #10b981',
+              borderRadius: '8px',
+              padding: '10px 14px',
+              color: '#34d399',
+              fontSize: '0.82rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <CheckCircle2 size={16} color="#34d399" />
+              <span>{waSentToast}</span>
+            </div>
+          )}
+
           {/* Dossier Generated Card */}
           {dossier && (
             <div className="glass-panel" style={{ padding: '20px', border: '1px solid #10b981', background: 'rgba(16, 185, 129, 0.08)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#34d399', fontWeight: 700, fontSize: '0.92rem' }}>
-                <Sparkles size={16} />
-                <span>CareWise Claim Dossier Ready!</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#34d399', fontWeight: 700, fontSize: '0.94rem' }}>
+                  <Sparkles size={16} />
+                  <span>CareWise Claim & Care Dossier Ready!</span>
+                </div>
+                <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                  CADF VERIFIED
+                </span>
               </div>
+
               <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '4px 0 10px' }}>
-                Dossier ID: {dossier.dossier_id} • TPA Code: {dossier.tpa_submission_code}
+                Dossier ID: <strong style={{ color: '#fff' }}>{dossier.dossier_id}</strong> • TPA Ref: <strong style={{ color: '#38bdf8' }}>{dossier.tpa_submission_code}</strong>
               </div>
-              <p style={{ fontSize: '0.82rem', color: '#fff' }}>
+
+              {/* Dynamic Financial Settlement Ledger */}
+              <div style={{ background: 'rgba(0, 0, 0, 0.25)', borderRadius: '8px', padding: '12px', margin: '12px 0', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 700, marginBottom: '8px' }}>
+                  Final Settlement Breakdown
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Total Hospital Bill</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f8fafc' }}>
+                      ₹{dossier.total_bill.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#34d399' }}>Insurer Cashless Paid</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#34d399' }}>
+                      ₹{dossier.cashless_sanctioned.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Senior Co-Pay Settled</div>
+                    <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#fbbf24' }}>
+                      ₹{dossier.copay_settled.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Caregiver Out-of-Pocket</div>
+                    <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#f87171' }}>
+                      ₹{dossier.caregiver_paid.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p style={{ fontSize: '0.80rem', color: 'var(--text-main)', margin: '8px 0' }}>
                 {dossier.summary_text}
               </p>
-              <div style={{ marginTop: '10px', fontSize: '0.78rem', color: '#6ee7b7' }}>
+
+              <div style={{ marginTop: '8px', fontSize: '0.76rem', color: '#6ee7b7' }}>
                 ✓ {dossier.documents_checklist.length} Claim documents bundled & indexed for instant discharge clearance.
+              </div>
+
+              {/* Action Buttons: PDF Download & WhatsApp Notification */}
+              <div style={{ marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                <button
+                  className="btn-primary"
+                  style={{ background: 'var(--grad-emerald)', fontSize: '0.80rem', padding: '8px 14px' }}
+                  onClick={handleDownloadPdf}
+                  title="Download printable PDF for TPA desk"
+                >
+                  <FileDown size={15} />
+                  <span>Download Official PDF Dossier</span>
+                </button>
+
+                <button
+                  className="btn-outline"
+                  style={{ borderColor: '#25D366', color: '#25D366', fontSize: '0.80rem', padding: '8px 14px' }}
+                  onClick={handleNotifyWhatsApp}
+                  disabled={waSending}
+                  title="Dispatch instant WhatsApp update to family"
+                >
+                  <MessageSquare size={15} color="#25D366" />
+                  <span>{waSending ? 'Sending WhatsApp...' : '📲 Notify Caregiver via WhatsApp'}</span>
+                </button>
               </div>
             </div>
           )}

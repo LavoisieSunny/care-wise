@@ -7,6 +7,7 @@ class RAGQueryRequest(BaseModel):
     query: str
     hospital_name: Optional[str] = None
     procedure_name: Optional[str] = None
+    language: Optional[str] = "en"
 
 class GroundedAnswerResponse(BaseModel):
     query: str

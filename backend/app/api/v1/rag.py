@@ -11,5 +11,6 @@ async def query_policy_rag(req: RAGQueryRequest):
         policy_id=req.policy_id,
         query=req.query,
         hospital_name=req.hospital_name,
-        procedure_name=req.procedure_name
+        procedure_name=req.procedure_name,
+        language=req.language or "en"
     )

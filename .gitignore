@@ -44,6 +44,9 @@ htmlcov/
 !.env.example
 !backend/.env.example
 
+# User uploads
+backend/app/data/uploaded/*.json
+
 # Logs
 logs/
 *.log

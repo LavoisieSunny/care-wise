@@ -233,13 +233,27 @@ class LLMClient:
             logger.warning(f"LLM field extraction failed, falling back to heuristics: {e}")
         return None
 
-    def answer_grounded_query(self, chunks: List[Dict[str, Any]], query: str, policy_name: str) -> Optional[Dict[str, Any]]:
+    def answer_grounded_query(
+        self,
+        chunks: List[Dict[str, Any]],
+        query: str,
+        policy_name: str,
+        language: str = "en"
+    ) -> Optional[Dict[str, Any]]:
         context_parts = []
         for c in chunks:
             context_parts.append(f"--- Excerpt (Page {c['page_number']}) ---\n{c['text']}")
         context_str = "\n\n".join(context_parts)
 
-        prompt = f"Policy Name: {policy_name}\n\nRetrieved Grounded Excerpts:\n{context_str}\n\nCaregiver Question: {query}"
+        lang_instruction = ""
+        if language == "hi":
+            lang_instruction = (
+                "\n\nCRITICAL LANGUAGE INSTRUCTION: The caregiver requested the explanation in Hindi. "
+                "Provide the 'answer' field and 'suggested_actions' in fluent, natural Hindi (Devanagari script), "
+                "while citing exact page numbers (e.g. पृष्ठ 1, पृष्ठ 2) and keeping insurance terms clear."
+            )
+
+        prompt = f"Policy Name: {policy_name}\n\nRetrieved Grounded Excerpts:\n{context_str}\n\nCaregiver Question: {query}{lang_instruction}"
 
         try:
             response_text = self._execute_llm(GROUNDED_CHAT_SYSTEM_PROMPT, prompt)

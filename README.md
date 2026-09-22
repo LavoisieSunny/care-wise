@@ -102,3 +102,24 @@ Click the **"🏆 Judge Tour"** button in the top navigation bar to launch an in
 2. **Proportionate Deduction Risk**: In Tab 3, switch room category from "Twin Sharing" to "Deluxe Suite" to see out-of-pocket expenses jump from ₹0 to ₹75,000+ due to IRDAI proportionate deductions.
 3. **Grounded RAG Assistant**: In Tab 1, click on any citation badge to highlight the exact clause in the policy viewer.
 4. **Treatment Journey**: In Tab 4, step through Admission, Treatment, Billing, and Discharge to download the final CareWise Claim Dossier.
+
+---
+
+## 6. Enterprise Readiness: What's Built vs. What's Roadmap
+
+CareWise is a working MVP, not a production enterprise deployment. To be upfront about that boundary:
+
+**Already implemented in this codebase:**
+- Real PDF ingestion, OCR-free text extraction, and an AI (LLM) deep-extraction pass with per-field page citations and confidence scores.
+- Structured audit logging (`backend/app/core/audit_log.py`) on every document upload, AI extraction, and journey-stage transition — a CADF-style event log (who / what / when / outcome) as a foundation for compliance monitoring.
+- A lightweight PII redaction pass (`backend/app/core/redaction.py`) on free-text chat queries before they reach any external LLM API, using structure-preserving substitution rather than blanket masking.
+- Grounded RAG chat that retrieves real chunks of the uploaded policy and requires the LLM to cite page numbers, with multi-language (English and Hindi) support.
+
+**Deliberately out of scope for this build, and why:**
+- **Multi-tenant data isolation** (PostgreSQL Row-Level Security) — needed before onboarding multiple hospitals/insurers on one instance; not needed for a single-tenant demo.
+- **Fine-grained authorization** (OpenFGA/ReBAC) — needed once there are multiple user roles with overlapping-but-distinct patient access; today's app has demo API-key authentication.
+- **ABDM integration** (ABHA identity, HIP/HIU FHIR bundles) and **NHCX** (claims-exchange FHIR profiles) — these require registration with the National Health Authority and passing a CERT-In WASA security audit; they're a partnership/certification track, not a coding task.
+- **Full DPDP Act / HIPAA compliance** (consent-manager webhooks, tiered data retention, 72-hour breach playbooks) — this is a legal-and-engineering program, not a feature.
+- **Conformal RAG hallucination guardrails** — today's chat is grounded (cites real page numbers) but doesn't yet have statistically-calibrated rejection thresholds; a reasonable next step once there's real usage data to calibrate against.
+
+This split is intentional: the demo proves the product idea and the extraction/grounding mechanics work end-to-end; the roadmap items are what a real deployment would need next, and are called out here rather than glossed over.
