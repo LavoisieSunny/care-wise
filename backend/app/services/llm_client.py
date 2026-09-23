@@ -118,6 +118,38 @@ class LLMClient:
             logger.warning(f"Claude API returned status {res.status_code}: {res.text}")
             return None
 
+    def call_claude_with_web_search(self, system_prompt: str, user_prompt: str) -> Optional[Dict[str, Any]]:
+        """Claude call with live web search grounding — for real-time market/policy context."""
+        if not settings.ANTHROPIC_API_KEY:
+            return None
+        url = "https://api.anthropic.com/v1/messages"
+        headers = {
+            "x-api-key": settings.ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json"
+        }
+        payload = {
+            "model": "claude-3-5-sonnet-20241022",
+            "max_tokens": 2048,
+            "system": system_prompt,
+            "messages": [{"role": "user", "content": user_prompt}],
+            "tools": [{"type": "web_search_20250305", "name": "web_search"}]
+        }
+        with httpx.Client(timeout=20.0) as client:
+            res = client.post(url, headers=headers, json=payload)
+            if res.status_code == 200:
+                data = res.json()
+                text_blocks = [b["text"] for b in data["content"] if b.get("type") == "text"]
+                citations = []
+                for b in data["content"]:
+                    if b.get("type") == "web_search_tool_result":
+                        for r in b.get("content", []):
+                            if r.get("url"):
+                                citations.append({"title": r.get("title", ""), "url": r["url"]})
+                return {"answer": "\n".join(text_blocks), "sources": citations}
+            logger.warning(f"Claude web search call failed: {res.status_code} {res.text}")
+            return None
+
     def _call_openai(self, system_prompt: str, user_prompt: str) -> Optional[str]:
         if not settings.OPENAI_API_KEY:
             return None

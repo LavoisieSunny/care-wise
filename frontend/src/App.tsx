@@ -45,6 +45,7 @@ import { JourneyTracker } from './components/JourneyTracker';
 import { AutofillChoiceModal } from './components/AutofillChoiceModal';
 import { Sidebar } from './components/Sidebar';
 import { LoginPage } from './components/LoginPage';
+import { MarketInsightModal } from './components/MarketInsightModal';
 import { getToken, logout } from './api/auth';
 
 // Set up pdfjs worker using standard URL bundler resolution
@@ -106,12 +107,38 @@ export const App: React.FC = () => {
   // Modals
   const [showSOSModal, setShowSOSModal] = useState<boolean>(false);
   const [showTourModal, setShowTourModal] = useState<boolean>(false);
+  const [showMarketInsights, setShowMarketInsights] = useState<boolean>(false);
   const [sosCopied, setSosCopied] = useState<boolean>(false);
   const [dossierAlert, setDossierAlert] = useState<string | null>(null);
   const [showCaregiverDrawer, setShowCaregiverDrawer] = useState<boolean>(false);
   const [scheduleModalRow, setScheduleModalRow] = useState<{
     title: string; subtitle: string; value: string; page: number; status: string; statusClass: string;
   } | null>(null);
+
+  // Fix 4: Draggable divider to resize the two panels
+  const [leftPanelWidth, setLeftPanelWidth] = useState<number>(45); // percent
+  const isDraggingRef = useRef(false);
+
+  const handleDividerMouseDown = () => { isDraggingRef.current = true; };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDraggingRef.current) return;
+      const container = document.getElementById('workbench-root');
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      let pct = ((e.clientX - rect.left) / rect.width) * 100;
+      pct = Math.min(70, Math.max(25, pct)); // clamp between 25% and 70%
+      setLeftPanelWidth(pct);
+    };
+    const handleMouseUp = () => { isDraggingRef.current = false; };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -400,6 +427,7 @@ export const App: React.FC = () => {
         onToggleEmergency={() => setEmergencyMode(!emergencyMode)}
         onOpenSOS={() => setShowSOSModal(true)}
         onOpenDemoTour={() => setShowTourModal(true)}
+        onOpenMarketInsights={() => setShowMarketInsights(true)}
         onLogout={() => {
           logout();
           setIsAuthed(false);
@@ -495,7 +523,7 @@ export const App: React.FC = () => {
           <JourneyTracker />
         </div>
       ) : (
-        <div className="workbench-container">
+        <div className="workbench-container" id="workbench-root" style={{ gridTemplateColumns: `${leftPanelWidth}% 8px ${100 - leftPanelWidth}%` }}>
         
         {/* ================= COLUMN 1: DOCUMENT & CLAUSE VIEWER ================= */}
         <section className="panel">
@@ -657,6 +685,10 @@ export const App: React.FC = () => {
             </div>
           </div>
         </section>
+
+        <div className="panel-resizer" onMouseDown={handleDividerMouseDown}>
+          <div className="panel-resizer-handle">⋮</div>
+        </div>
 
         {/* ================= COLUMN 2: STRUCTURED EXTRACTION & SCHEDULE TABLE ================= */}
         <section className="panel">
@@ -1336,6 +1368,12 @@ export const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Market Insight Modal (Claude Web Search Grounded) */}
+      <MarketInsightModal
+        isOpen={showMarketInsights}
+        onClose={() => setShowMarketInsights(false)}
+      />
       </div>
     </div>
   );

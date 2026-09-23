@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, FileText, AlertTriangle, Share2, Award, LayoutGrid, Activity, LogOut } from 'lucide-react';
+import { Menu, X, FileText, AlertTriangle, Share2, Award, LayoutGrid, Activity, LogOut, Globe } from 'lucide-react';
 
 interface SidebarProps {
   viewMode: 'studio' | 'journey';
@@ -11,6 +11,7 @@ interface SidebarProps {
   onToggleEmergency: () => void;
   onOpenSOS: () => void;
   onOpenDemoTour: () => void;
+  onOpenMarketInsights: () => void;
   onLogout?: () => void;
 }
 
@@ -25,7 +26,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 
       <aside className={`app-sidebar ${open ? 'open' : ''}`}>
         <div className="sidebar-brand">
-          <FileText size={22} color="#0b3a72" />
+          <div className="sidebar-brand-icon"><FileText size={20} color="#fff" /></div>
           <div><div className="brand-title">CareWise</div><div className="brand-tagline">Smart Decisions, Better Care</div></div>
         </div>
 
@@ -42,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
           </button>
           <button className="nav-item" onClick={props.onOpenSOS}><Share2 size={16} /><span>Family SOS</span></button>
           <button className="nav-item" onClick={props.onOpenDemoTour}><Award size={16} /><span>Judge Tour</span></button>
+          <button className="nav-item" onClick={props.onOpenMarketInsights}><Globe size={16} /><span>Market Insights</span></button>
           {props.onLogout && (
             <button className="nav-item" onClick={props.onLogout} style={{ marginTop: '8px', color: '#dc2626' }}>
               <LogOut size={16} /><span>Log Out</span>

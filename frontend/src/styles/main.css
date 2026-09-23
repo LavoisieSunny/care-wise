@@ -66,13 +66,11 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
 
 .app-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(255, 255, 255, 0.96);
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255, 255, 255, 0.97);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border-subtle);
-  padding: 10px 20px;
+  padding: 16px 24px 16px 66px;
 }
 
 .header-row {
@@ -109,11 +107,11 @@ body {
   background: var(--color-primary);
   color: #ffffff;
   border: none;
-  padding: 8px 18px;
+  padding: 10px 20px;
   border-radius: var(--radius-md);
   font-family: var(--font-heading);
   font-weight: 700;
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: all 0.15s ease;
@@ -180,18 +178,11 @@ body {
 .btn-header-action:hover { background: var(--bg-primary); border-color: var(--color-primary); }
 
 .document-status-strip {
-  background: #ffffff;
-  border-bottom: 1px solid var(--border-subtle);
-  padding: 8px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  font-size: 0.8rem;
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+  gap: 12px; padding: 14px 24px; background: #ffffff; border-bottom: 1px solid var(--border-subtle);
 }
-.doc-info-item { display: flex; align-items: center; gap: 6px; color: var(--text-muted); }
-.doc-info-item strong { color: var(--text-main); }
+.doc-info-item { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 0.86rem; }
+.doc-info-item strong { color: var(--text-main); font-size: 0.92rem; }
 .ocr-badge {
   display: inline-flex;
   align-items: center;
@@ -205,15 +196,19 @@ body {
   font-weight: 700;
 }
 
-.workbench-container {
-  display: grid;
-  grid-template-columns: 45% 55%;
-  height: calc(100vh - 105px);
-  overflow: hidden;
-  background: var(--bg-primary);
+.workbench-container { display: grid; height: calc(100vh - 105px); overflow: hidden; background: var(--bg-primary); }
+@media (max-width: 1024px) { .workbench-container { grid-template-columns: 1fr !important; height: auto; overflow-y: auto; } }
+
+.panel-resizer {
+  width: 8px; cursor: col-resize; background: var(--bg-primary);
+  border-left: 1px solid var(--border-subtle); border-right: 1px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: center; height: 100%;
 }
-@media (max-width: 1280px) { .workbench-container { grid-template-columns: 45% 55%; } }
-@media (max-width: 1024px) { .workbench-container { grid-template-columns: 1fr; height: auto; overflow-y: auto; } }
+.panel-resizer:hover, .panel-resizer:active { background: rgba(11,58,114,0.1); }
+.panel-resizer-handle {
+  writing-mode: vertical-rl; color: var(--text-dim); font-size: 10px; letter-spacing: 1px;
+  user-select: none; pointer-events: none;
+}
 
 .panel {
   display: flex;
@@ -599,18 +594,18 @@ mark.pdf-highlight-glow {
 }
 .app-sidebar.open { transform: translateX(0); }
 .app-main { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-@media (min-width: 1200px) {
-  .app-sidebar { transform: translateX(0); }
-  .hamburger-btn { display: none; }
-  .app-main { margin-left: 220px; }
-  .app-header { margin-left: 220px; }
+.sidebar-brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 14px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(135deg, rgba(11,58,114,0.05), rgba(11,58,114,0.02));
 }
-@media (max-width: 1199px) {
-  .app-header {
-    padding-left: 56px;
-  }
+.sidebar-brand-icon {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  background: var(--color-primary);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(11,58,114,0.3);
 }
-.sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 6px 10px 18px; color: var(--color-primary); }
 .brand-tagline { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.4px; }
 .sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
 .nav-item {
@@ -630,8 +625,10 @@ mark.pdf-highlight-glow {
 .sidebar-policy-item:hover { background: var(--bg-primary); }
 .sidebar-policy-item.active { background: rgba(11,58,114,0.1); color: var(--color-primary); font-weight: 700; }
 .hamburger-btn {
-  position: fixed; top: 12px; left: 12px; z-index: 210; background: #ffffff;
-  border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px; cursor: pointer;
+  position: fixed; top: 14px; left: 14px; z-index: 330;
+  width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
+  background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 10px;
+  cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 .sidebar-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.4); z-index: 190; }
 

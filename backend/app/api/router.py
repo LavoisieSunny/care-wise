@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from app.core.security import get_current_user
 from app.api.v1 import (
-    health, auth, policies, hospitals, calculator, rag, journey, sos, reports
+    health, auth, policies, hospitals, calculator, rag, journey, sos, reports, market
 )
 
 api_router = APIRouter()
@@ -19,4 +19,5 @@ protected.include_router(rag.router)
 protected.include_router(journey.router)
 protected.include_router(sos.router)
 protected.include_router(reports.router)
+protected.include_router(market.router)
 api_router.include_router(protected)

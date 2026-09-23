@@ -66,11 +66,14 @@ def test_api_claim_readiness_endpoints():
         "policy_id": policy.id,
         "comparison": comparison.model_dump()
     }
+    import uuid
+    uid = uuid.uuid4().hex[:8]
     reg_res = client.post("/api/v1/auth/register", json={
-        "email": "report_tester@carewise.org",
+        "email": f"report_tester_{uid}@carewise.org",
         "password": "Password123!",
-        "name": "Report Tester"
+        "name": f"Report Tester {uid}"
     })
+    assert reg_res.status_code == 200
     token = reg_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
