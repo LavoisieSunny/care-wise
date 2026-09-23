@@ -46,6 +46,9 @@ htmlcov/
 
 # User uploads
 backend/app/data/uploaded/*.json
+*.db
+*.sqlite
+*.sqlite3
 
 # Logs
 logs/

@@ -13,6 +13,7 @@ import {
 import { HospitalCostAnalysis, CompareHospitalsResponse } from '../types/calculator';
 import { PolicyDetails } from '../types/policy';
 import { compareHospitals } from '../api/calculator';
+import { downloadClaimReadinessPdf } from '../api/reports';
 
 interface CostComparatorProps {
   policy: PolicyDetails;
@@ -29,6 +30,19 @@ export const CostComparator: React.FC<CostComparatorProps> = ({
   const [patientAge, setPatientAge] = useState<number>(55);
   const [comparisonData, setComparisonData] = useState<CompareHospitalsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [exporting, setExporting] = useState<boolean>(false);
+
+  const handleExportReport = async () => {
+    if (!comparisonData) return;
+    setExporting(true);
+    try {
+      await downloadClaimReadinessPdf(policy.id, comparisonData);
+    } catch (err) {
+      console.error('Failed to export claim readiness report:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Default hospital IDs to compare if none selected
   const activeHospitalIds = selectedHospitalIds.length >= 2 
@@ -174,6 +188,18 @@ export const CostComparator: React.FC<CostComparatorProps> = ({
           </div>
         </div>
       </div>
+
+      {comparisonData && !loading && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 14px 10px' }}>
+          <button className="btn-primary" onClick={handleExportReport} disabled={exporting}>
+            {exporting ? (
+              <><Sparkles size={14} className="spin" /> Generating AI Report...</>
+            ) : (
+              <><DollarSign size={14} /> Export Claim Readiness Report (PDF)</>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Comparison Cards Grid */}
       {loading ? (

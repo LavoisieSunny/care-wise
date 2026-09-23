@@ -6,12 +6,13 @@ Unit tests for PolicyService:
 """
 import fitz
 from pathlib import Path
-from app.services.policy_service import policy_service, UPLOADED_DATA_PATH
+from app.services.policy_service import policy_service
+from app.core.database import SessionLocal, PolicyRecord
 from app.schemas.policy import PolicyDetails, PolicyRoomLimit, PolicyCoPay, PolicyPreAuth
 
 
 def test_list_and_get_sample_policies():
-    """Ensure sample policies are loaded into memory on boot."""
+    """Ensure sample policies are loaded into database on boot."""
     policies = policy_service.list_policies()
     assert len(policies) >= 3
 
@@ -22,8 +23,8 @@ def test_list_and_get_sample_policies():
     assert fetched.sum_insured > 0
 
 
-def test_policy_disk_persistence(tmp_path):
-    """Ensure user-uploaded policies persist to disk and reload on service restart."""
+def test_policy_database_persistence():
+    """Ensure user-uploaded policies persist to SQLite database."""
     test_id = "test_persisted_policy_999"
     policy = PolicyDetails(
         id=test_id,
@@ -52,25 +53,37 @@ def test_policy_disk_persistence(tmp_path):
         all_citations=[]
     )
 
-    # Persist
-    policy_service._persist_policy(policy)
-    persisted_file = UPLOADED_DATA_PATH / f"{test_id}.json"
-    assert persisted_file.exists()
+    # Persist via service
+    policy_service._save_policy(policy)
 
-    # Re-read from disk
-    policy_service._load_sample_policies()
+    # Verify directly in DB
+    db = SessionLocal()
+    try:
+        record = db.get(PolicyRecord, test_id)
+        assert record is not None
+        assert record.policy_name == "Star Comprehensive Demo Plan"
+    finally:
+        db.close()
+
+    # Re-read via service
     reloaded = policy_service.get_policy(test_id)
     assert reloaded is not None
     assert reloaded.id == test_id
     assert reloaded.sum_insured == 750000.0
 
-    # Clean up test artifact
-    if persisted_file.exists():
-        persisted_file.unlink()
+    # Clean up test artifact from DB
+    db = SessionLocal()
+    try:
+        rec = db.get(PolicyRecord, test_id)
+        if rec:
+            db.delete(rec)
+            db.commit()
+    finally:
+        db.close()
 
 
 def test_parse_pdf_with_pymupdf():
-    """Ensure PyMuPDF extracts text and creates PolicyUploadResponse."""
+    """Ensure PyMuPDF extracts text and creates PolicyUploadResponse and persists in DB."""
     doc = fitz.open()
     page = doc.new_page()
     page.insert_text(
@@ -90,7 +103,17 @@ def test_parse_pdf_with_pymupdf():
     assert res.policy is not None
     assert res.policy.sum_insured > 0
 
-    # Cleanup generated file
-    persisted = UPLOADED_DATA_PATH / f"{res.policy.id}.json"
-    if persisted.exists():
-        persisted.unlink()
+    # Verify saved in DB
+    saved = policy_service.get_policy(res.policy.id)
+    assert saved is not None
+    assert saved.id == res.policy.id
+
+    # Cleanup DB record
+    db = SessionLocal()
+    try:
+        rec = db.get(PolicyRecord, res.policy.id)
+        if rec:
+            db.delete(rec)
+            db.commit()
+    finally:
+        db.close()

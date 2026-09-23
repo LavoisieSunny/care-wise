@@ -15,10 +15,9 @@ from app.schemas.policy import (
     PolicyUploadResponse
 )
 from app.services.llm_client import llm_client
+from app.core.database import SessionLocal, PolicyRecord, init_db
 
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "sample_policies.json"
-UPLOADED_DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "uploaded"
-UPLOADED_DATA_PATH.mkdir(parents=True, exist_ok=True)
 
 
 def find_page_and_snippet(page_texts: Dict[str, str], keywords: List[str], fallback_page: int = 1) -> Tuple[int, str]:
@@ -39,28 +38,45 @@ def find_page_and_snippet(page_texts: Dict[str, str], keywords: List[str], fallb
 
 class PolicyService:
     def __init__(self):
-        self._policies: Dict[str, PolicyDetails] = {}
+        init_db()
         self._upload_cache: Dict[str, Dict[str, Any]] = {}
-        self._load_sample_policies()
+        self._seed_sample_policies_if_empty()
 
-    def _persist_policy(self, policy: PolicyDetails):
-        """Persist extracted policy to disk so it survives server restarts."""
+    def _save_policy(self, policy: PolicyDetails, owner_id: Optional[str] = None):
+        """Write-through: upsert policy into the database."""
+        db = SessionLocal()
         try:
-            UPLOADED_DATA_PATH.mkdir(parents=True, exist_ok=True)
-            target = UPLOADED_DATA_PATH / f"{policy.id}.json"
-            with open(target, "w", encoding="utf-8") as f:
-                f.write(policy.model_dump_json(indent=2))
-            logger.info(f"Persisted policy '{policy.id}' to disk ({target}).")
+            record = db.get(PolicyRecord, policy.id)
+            if record is None:
+                record = PolicyRecord(id=policy.id, owner_id=owner_id)
+                db.add(record)
+            record.insurer_name = policy.insurer_name
+            record.policy_name = policy.policy_name
+            record.data_json = policy.model_dump_json()
+            db.commit()
+            logger.info(f"Saved policy '{policy.id}' to database.")
         except Exception as e:
-            logger.error(f"Failed to persist policy '{policy.id}': {e}")
+            db.rollback()
+            logger.error(f"Failed to save policy '{policy.id}' to DB: {e}")
+        finally:
+            db.close()
 
-    def _load_sample_policies(self):
+    def _seed_sample_policies_if_empty(self):
+        db = SessionLocal()
+        try:
+            existing_count = db.query(PolicyRecord).count()
+        finally:
+            db.close()
+
+        if existing_count > 0:
+            logger.info(f"Database already has {existing_count} policies — skipping seed.")
+            return
+
         try:
             if DATA_PATH.exists():
                 with open(DATA_PATH, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     for item in data:
-                        # Ensure sample policies have raw_text_pages populated for RAG
                         if not item.get("raw_text_pages"):
                             synth_pages: Dict[str, str] = {}
                             citations = item.get("all_citations", [])
@@ -69,7 +85,6 @@ class PolicyService:
                                 if pg not in synth_pages:
                                     synth_pages[pg] = ""
                                 synth_pages[pg] += f"\n[{c.get('section', 'Terms')}]\n{c.get('clause_title', '')}: {c.get('exact_text', '')}\n"
-                            # Add default terms if sparse
                             if "1" not in synth_pages:
                                 synth_pages["1"] = f"Policy Schedule: {item.get('policy_name')}\nSum Insured: Rs. {item.get('sum_insured', 500000):,.0f}\nInsurer: {item.get('insurer_name')}"
                             if "12" not in synth_pages:
@@ -77,31 +92,33 @@ class PolicyService:
                             item["raw_text_pages"] = synth_pages
 
                         policy = PolicyDetails(**item)
-                        self._policies[policy.id] = policy
-                logger.info(f"Loaded {len(self._policies)} sample policies into memory.")
-
-            # Load user uploaded policies persisted to disk
-            if UPLOADED_DATA_PATH.exists():
-                loaded_uploads = 0
-                for json_file in UPLOADED_DATA_PATH.glob("*.json"):
-                    try:
-                        with open(json_file, "r", encoding="utf-8") as f:
-                            item = json.load(f)
-                            policy = PolicyDetails(**item)
-                            self._policies[policy.id] = policy
-                            loaded_uploads += 1
-                    except Exception as e:
-                        logger.warning(f"Could not load persisted policy from {json_file}: {e}")
-                if loaded_uploads > 0:
-                    logger.info(f"Restored {loaded_uploads} user uploaded policies from disk. Total policies: {len(self._policies)}")
+                        self._save_policy(policy)
+                logger.info(f"Seeded {len(data)} sample policies into database.")
         except Exception as e:
-            logger.error(f"Failed to load policies: {e}")
+            logger.error(f"Failed to seed sample policies: {e}")
 
-    def list_policies(self) -> List[PolicyDetails]:
-        return list(self._policies.values())
+    def list_policies(self, owner_id: Optional[str] = None) -> List[PolicyDetails]:
+        db = SessionLocal()
+        try:
+            query = db.query(PolicyRecord)
+            if owner_id:
+                # Show the user's own uploads PLUS the seeded sample policies (owner_id is NULL)
+                query = query.filter((PolicyRecord.owner_id == owner_id) | (PolicyRecord.owner_id.is_(None)))
+            return [PolicyDetails(**json.loads(r.data_json)) for r in query.all()]
+        finally:
+            db.close()
 
-    def get_policy(self, policy_id: str) -> Optional[PolicyDetails]:
-        return self._policies.get(policy_id)
+    def get_policy(self, policy_id: str, owner_id: Optional[str] = None) -> Optional[PolicyDetails]:
+        db = SessionLocal()
+        try:
+            record = db.get(PolicyRecord, policy_id)
+            if not record:
+                return None
+            if owner_id and record.owner_id and record.owner_id != owner_id:
+                return None  # exists, but belongs to someone else
+            return PolicyDetails(**json.loads(record.data_json))
+        finally:
+            db.close()
 
     def _heuristic_extraction(
         self,
@@ -391,7 +408,7 @@ class PolicyService:
             raw_text_pages=page_texts
         )
 
-    def parse_pdf(self, file_bytes: bytes, filename: str, mode: str = "quick") -> PolicyUploadResponse:
+    def parse_pdf(self, file_bytes: bytes, filename: str, mode: str = "quick", owner_id: Optional[str] = None) -> PolicyUploadResponse:
         """Extract text from uploaded PDF and run either quick OCR heuristics or AI deep extraction."""
         try:
             doc = fitz.open(stream=file_bytes, filetype="pdf")
@@ -419,8 +436,7 @@ class PolicyService:
                 policy_details = self._heuristic_extraction(full_text, page_texts, filename, total_pages)
                 conf = 0.89
 
-            self._policies[policy_details.id] = policy_details
-            self._persist_policy(policy_details)
+            self._save_policy(policy_details, owner_id=owner_id)
             logger.info(f"Processed uploaded policy '{filename}' ({total_pages} pages, mode={mode}). ID: {policy_details.id}")
 
             return PolicyUploadResponse(
@@ -437,7 +453,7 @@ class PolicyService:
             logger.error(f"Error parsing PDF '{filename}': {e}", exc_info=True)
             raise ValueError(f"Failed to process policy PDF: {str(e)}")
 
-    def parse_pdf_deep(self, upload_id: str) -> PolicyUploadResponse:
+    def parse_pdf_deep(self, upload_id: str, owner_id: Optional[str] = None) -> PolicyUploadResponse:
         """Run deep AI LLM extraction on previously uploaded document using cached page texts."""
         cached = self._upload_cache.get(upload_id)
         if not cached:
@@ -449,8 +465,7 @@ class PolicyService:
         full_text = cached["full_text"]
 
         policy_details = self._llm_based_extraction(full_text, page_texts, filename, total_pages)
-        self._policies[policy_details.id] = policy_details
-        self._persist_policy(policy_details)
+        self._save_policy(policy_details, owner_id=owner_id)
 
         return PolicyUploadResponse(
             success=True,

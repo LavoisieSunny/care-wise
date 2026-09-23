@@ -1,25 +1,24 @@
 from fastapi import Security, HTTPException, status
-from fastapi.security import APIKeyHeader
-from app.core.config import settings
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from app.services.auth_service import auth_service
+from app.schemas.auth import UserOut
 
-api_key_header = APIKeyHeader(name="X-CareWise-Key", auto_error=False)
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
-async def verify_demo_key(api_key: str = Security(api_key_header)) -> bool:
-    """Validate shared demo API key header.
-
-    If REQUIRE_AUTH is enabled, any missing or mismatched key is rejected with 401.
-    If REQUIRE_AUTH is disabled (default development/hackathon mode), requests
-    without a key are allowed with a warning, but invalid keys are rejected.
-    """
-    if not settings.REQUIRE_AUTH and not api_key:
-        return True
-
-    if api_key == settings.DEMO_API_KEY:
-        return True
-
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Unauthorized: Invalid or missing X-CareWise-Key header for CareWise API.",
-        headers={"WWW-Authenticate": "ApiKey"},
-    )
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Security(bearer_scheme),
+) -> UserOut:
+    """Require a valid JWT bearer token; returns the authenticated user."""
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated. Include 'Authorization: Bearer <token>'.",
+        )
+    user_id = auth_service.decode_token(credentials.credentials)
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token.")
+    user = auth_service.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User no longer exists.")
+    return user

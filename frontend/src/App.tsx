@@ -43,6 +43,9 @@ import { generateDossier, getJourneyGuidance, DecisionGuidance, getDossierPdfUrl
 import { ClaimDossierResponse } from './types/journey';
 import { JourneyTracker } from './components/JourneyTracker';
 import { AutofillChoiceModal } from './components/AutofillChoiceModal';
+import { Sidebar } from './components/Sidebar';
+import { LoginPage } from './components/LoginPage';
+import { getToken, logout } from './api/auth';
 
 // Set up pdfjs worker using standard URL bundler resolution
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -51,6 +54,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 export const App: React.FC = () => {
+  const [isAuthed, setIsAuthed] = useState<boolean>(!!getToken());
   const [policies, setPolicies] = useState<PolicyDetails[]>([]);
   const [activePolicy, setActivePolicy] = useState<PolicyDetails | null>(null);
   const [activeCitation, setActiveCitation] = useState<ClauseCitation | null>(null);
@@ -362,6 +366,10 @@ export const App: React.FC = () => {
     setTimeout(() => setSosCopied(false), 2000);
   };
 
+  if (!isAuthed) {
+    return <LoginPage onSuccess={() => setIsAuthed(true)} />;
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       {/* Hidden file input */}
@@ -377,105 +385,45 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* 1. App Header with Upload Button & Sample Pills */}
+      {/* 1. Sidebar (brand, nav, emergency, SOS, tour) */}
+      <Sidebar
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        policies={policies}
+        activePolicy={activePolicy}
+        selectPolicy={selectPolicy}
+        emergencyMode={emergencyMode}
+        onToggleEmergency={() => setEmergencyMode(!emergencyMode)}
+        onOpenSOS={() => setShowSOSModal(true)}
+        onOpenDemoTour={() => setShowTourModal(true)}
+        onLogout={() => {
+          logout();
+          setIsAuthed(false);
+        }}
+      />
+
+      {/* 2. Slim top bar — just upload + processing status */}
       <header className="app-header">
         <div className="header-row">
-          {/* Brand */}
-          <div className="brand-wrapper">
-            <svg className="brand-logo-icon" viewBox="0 0 100 100" fill="none">
-              <defs>
-                <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#0b3a72" />
-                  <stop offset="100%" stopColor="#2563EB" />
-                </linearGradient>
-              </defs>
-              <path d="M50 8 L85 22 C85 55 50 88 50 94 C50 88 15 55 15 22 Z" fill="#0F172A" stroke="url(#logoGrad)" strokeWidth="5" />
-              <rect x="44" y="32" width="12" height="32" rx="3" fill="#0b3a72" />
-              <rect x="34" y="42" width="32" height="12" rx="3" fill="#0b3a72" />
-              <circle cx="50" cy="48" r="3.5" fill="#FFFFFF" />
-            </svg>
-            <div>
-              <div className="brand-title">CareWise</div>
-              <div className="brand-subtitle">Smart Decisions, Better Care</div>
+          <button
+            className="btn-upload-main"
+            onClick={() => fileInputRef.current?.click()}
+            title="Upload any health insurance PDF to run OCR and extract schedules"
+          >
+            <UploadCloud size={18} />
+            <span>{isUploading ? 'Running OCR Extraction...' : 'Upload Policy Document (PDF)'}</span>
+          </button>
+
+          {isDeepLoading && (
+            <div style={{ background: 'rgba(6, 182, 212, 0.15)', border: '1px solid #0b3a72', color: '#1d4ed8', padding: '4px 10px', borderRadius: '12px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Sparkles size={12} className="spin" />
+              <span>AI Deep Extraction processing in background...</span>
             </div>
-          </div>
-
-          {/* Center / Right Tools */}
-          <div className="header-tools">
-            {/* View Mode Switcher: Studio vs Inpatient Journey Tracker */}
-            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '8px', padding: '3px', border: '1px solid var(--border-subtle)', marginRight: '4px' }}>
-              <button
-                className={`sample-pill-btn ${viewMode === 'studio' ? 'active' : ''}`}
-                style={{ borderRadius: '6px', fontSize: '0.74rem', padding: '5px 12px', background: viewMode === 'studio' ? '#0b3a72' : 'transparent', color: viewMode === 'studio' ? '#ffffff' : '#64748b', fontWeight: 700, border: 'none', cursor: 'pointer' }}
-                onClick={() => setViewMode('studio')}
-              >
-                📋 Policy Grounding Studio
-              </button>
-              <button
-                className={`sample-pill-btn ${viewMode === 'journey' ? 'active' : ''}`}
-                style={{ borderRadius: '6px', fontSize: '0.74rem', padding: '5px 12px', background: viewMode === 'journey' ? '#0b3a72' : 'transparent', color: viewMode === 'journey' ? '#ffffff' : '#64748b', fontWeight: 700, border: 'none', cursor: 'pointer' }}
-                onClick={() => setViewMode('journey')}
-              >
-                🏥 Inpatient Journey Tracker
-              </button>
-            </div>
-            {/* The One Prominent Upload Button */}
-            <button
-              className="btn-upload-main"
-              onClick={() => fileInputRef.current?.click()}
-              title="Upload any health insurance PDF to run OCR and extract schedules"
-            >
-              <UploadCloud size={18} />
-              <span>{isUploading ? 'Running OCR Extraction...' : 'Upload Policy Document (PDF)'}</span>
-            </button>
-
-            {/* Non-blocking Header OCR Processing Badge (MACT Pattern) */}
-            {isDeepLoading && (
-              <div style={{ background: 'rgba(6, 182, 212, 0.15)', border: '1px solid #0b3a72', color: '#1d4ed8', padding: '4px 10px', borderRadius: '12px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Sparkles size={12} className="spin" />
-                <span>AI Deep Extraction processing in background...</span>
-              </div>
-            )}
-
-            {/* Quick Sample Selector Pills for Instant Demo */}
-            <div className="sample-pills-bar">
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>
-                Sample Policies:
-              </span>
-              {policies.map(p => (
-                <button
-                  key={p.id}
-                  className={`sample-pill-btn ${activePolicy?.id === p.id ? 'active' : ''}`}
-                  onClick={() => selectPolicy(p)}
-                >
-                  {p.insurer_name.split(' ')[0]} ({((p.sum_insured || 500000) / 100000).toFixed(0)}L)
-                </button>
-              ))}
-            </div>
-
-            {/* 2 AM Emergency Toggle */}
-            <button
-              className={`btn-emergency ${emergencyMode ? 'active' : ''}`}
-              onClick={() => setEmergencyMode(!emergencyMode)}
-            >
-              <AlertTriangle size={15} />
-              <span>{emergencyMode ? '🚨 2 AM Mode: Active' : '2 AM Emergency'}</span>
-            </button>
-
-            {/* SOS Share Button */}
-            <button className="btn-header-action" onClick={() => setShowSOSModal(true)}>
-              <Share2 size={14} color="#10B981" />
-              <span>Family SOS</span>
-            </button>
-
-            {/* 60-Sec Tour */}
-            <button className="btn-header-action" onClick={() => setShowTourModal(true)}>
-              <Award size={14} color="#F59E0B" />
-              <span>🏆 Judge Guide</span>
-            </button>
-          </div>
+          )}
         </div>
       </header>
+
+      <div className="app-main">
 
       {/* 2. Document Status Strip & OCR Extraction Bar */}
       <div className="document-status-strip">
@@ -539,7 +487,7 @@ export const App: React.FC = () => {
 
       {/* 3. Main Unified Workbench or Inpatient Journey Tracker */}
       {viewMode === 'journey' ? (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', background: 'var(--bg-primary)' }}>
+        <div className="journey-view-container" style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', background: 'var(--bg-primary)' }}>
           <JourneyTracker />
         </div>
       ) : (
@@ -1355,6 +1303,7 @@ export const App: React.FC = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

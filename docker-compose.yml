@@ -8,6 +8,8 @@ services:
     container_name: carewise_backend
     ports:
       - "8000:8000"
+    volumes:
+      - carewise_data:/app/app/data
     environment:
       - PROJECT_NAME=CareWise
       - API_V1_STR=/api/v1
@@ -25,3 +27,6 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
+volumes:
+  carewise_data:

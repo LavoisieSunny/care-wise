@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     # Security Settings
     DEMO_API_KEY: str = "carewise-demo-secret-2026"
     REQUIRE_AUTH: bool = False
+    JWT_SECRET_KEY: str = "change-this-in-production-carewise-2026"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     
     # CORS settings
     BACKEND_CORS_ORIGINS: List[str] = [
