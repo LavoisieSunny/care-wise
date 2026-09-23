@@ -108,6 +108,10 @@ export const App: React.FC = () => {
   const [showTourModal, setShowTourModal] = useState<boolean>(false);
   const [sosCopied, setSosCopied] = useState<boolean>(false);
   const [dossierAlert, setDossierAlert] = useState<string | null>(null);
+  const [showCaregiverDrawer, setShowCaregiverDrawer] = useState<boolean>(false);
+  const [scheduleModalRow, setScheduleModalRow] = useState<{
+    title: string; subtitle: string; value: string; page: number; status: string; statusClass: string;
+  } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -671,11 +675,9 @@ export const App: React.FC = () => {
               <table className="schedule-table">
                 <thead>
                   <tr>
-                    <th>#</th>
+                    <th style={{ width: '40px' }}>#</th>
                     <th>Schedule / Clause</th>
-                    <th>Extracted Terms & Limits</th>
-                    <th>Page</th>
-                    <th>Status</th>
+                    <th style={{ width: '90px' }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -684,27 +686,20 @@ export const App: React.FC = () => {
                     className={`${activeCitation?.tag === 'ROOM_LIMIT' ? 'active-row' : ''} ${flashingIdx === 1 ? 'autofill-flash' : ''}`}
                     onClick={() => {
                       if (activePolicy?.room_limit.citation) handleScheduleClick(activePolicy.room_limit.citation);
+                      setScheduleModalRow({
+                        title: 'Room Rent Cap',
+                        subtitle: 'SEC-3.2.1 Boarding & Nursing',
+                        value: activePolicy?.room_limit.no_room_rent_capping
+                          ? 'No Cap (Any Room Allowed)'
+                          : `₹${(activePolicy?.room_limit.capped_amount_per_day || 5000).toLocaleString('en-IN')}/day — Proportionate Cut Active`,
+                        page: activePolicy?.room_limit.citation?.page_number || 12,
+                        status: activePolicy?.room_limit.no_room_rent_capping ? 'SAFE' : 'RISK',
+                        statusClass: activePolicy?.room_limit.no_room_rent_capping ? 'chip-green' : 'chip-amber',
+                      });
                     }}
                   >
                     <td><strong>01</strong></td>
-                    <td>
-                      <div style={{ fontWeight: 700, color: '#0f172a' }}>Room Rent Cap</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>SEC-3.2.1 Boarding & Nursing</div>
-                      {activePolicy?.room_limit.citation?.confidence !== undefined && activePolicy.room_limit.citation.confidence < 0.85 && (
-                        <span className="confidence-chip-low">⚠️ Review term</span>
-                      )}
-                    </td>
-                    <td>
-                      <span style={{ color: activePolicy?.room_limit.no_room_rent_capping ? '#16a34a' : '#d97706', fontWeight: 600 }}>
-                        {activePolicy?.room_limit.no_room_rent_capping 
-                          ? 'No Cap (Any Room Allowed)' 
-                          : `₹${(activePolicy?.room_limit.capped_amount_per_day || 5000).toLocaleString('en-IN')}/day`}
-                      </span>
-                      {!activePolicy?.room_limit.no_room_rent_capping && (
-                        <div style={{ fontSize: '0.68rem', color: '#f43f5e' }}>Proportionate Cut Active</div>
-                      )}
-                    </td>
-                    <td><span style={{ color: '#0b3a72', fontWeight: 700 }}>Pg {activePolicy?.room_limit.citation?.page_number || 12}</span></td>
+                    <td style={{ fontWeight: 700, color: '#0f172a' }}>Room Rent Cap</td>
                     <td>
                       <span className={`table-status-chip ${activePolicy?.room_limit.no_room_rent_capping ? 'chip-green' : 'chip-amber'}`}>
                         {activePolicy?.room_limit.no_room_rent_capping ? 'SAFE' : 'RISK'}
@@ -718,19 +713,18 @@ export const App: React.FC = () => {
                     onClick={() => {
                       const cit = activePolicy?.all_citations.find(c => c.tag === 'ICU_LIMIT') || activePolicy?.all_citations[1];
                       if (cit) handleScheduleClick(cit);
+                      setScheduleModalRow({
+                        title: 'ICU / ICCU Limit',
+                        subtitle: 'Critical Care Monitoring',
+                        value: activePolicy?.icu_limit_per_day ? `₹${activePolicy.icu_limit_per_day.toLocaleString('en-IN')}/day` : 'As per actuals (No Capping)',
+                        page: activePolicy?.all_citations[1]?.page_number || 13,
+                        status: 'COVERED',
+                        statusClass: 'chip-green',
+                      });
                     }}
                   >
                     <td><strong>02</strong></td>
-                    <td>
-                      <div style={{ fontWeight: 700, color: '#0f172a' }}>ICU / ICCU Limit</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Critical Care Monitoring</div>
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
-                        {activePolicy?.icu_limit_per_day ? `₹${activePolicy.icu_limit_per_day.toLocaleString('en-IN')}/day` : 'As per actuals'}
-                      </span>
-                    </td>
-                    <td><span style={{ color: '#0b3a72', fontWeight: 700 }}>Pg {activePolicy?.all_citations[1]?.page_number || 13}</span></td>
+                    <td style={{ fontWeight: 700, color: '#0f172a' }}>ICU / ICCU Limit</td>
                     <td><span className="table-status-chip chip-green">COVERED</span></td>
                   </tr>
 
@@ -739,24 +733,20 @@ export const App: React.FC = () => {
                     className={`${activeCitation?.tag === 'COPAY' ? 'active-row' : ''} ${flashingIdx === 2 ? 'autofill-flash' : ''}`}
                     onClick={() => {
                       if (activePolicy?.copay.citation) handleScheduleClick(activePolicy.copay.citation);
+                      setScheduleModalRow({
+                        title: 'Mandatory Co-Pay',
+                        subtitle: 'Senior Citizen Clause',
+                        value: (activePolicy?.copay.senior_citizen_percentage || 0) > 0
+                          ? `${activePolicy?.copay.senior_citizen_percentage}% Co-Pay required for Age 61+`
+                          : '0% Co-Payment (Full Coverage)',
+                        page: activePolicy?.copay.citation?.page_number || 18,
+                        status: (activePolicy?.copay.senior_citizen_percentage || 0) > 0 ? 'APPLIES' : 'ZERO',
+                        statusClass: (activePolicy?.copay.senior_citizen_percentage || 0) > 0 ? 'chip-amber' : 'chip-green',
+                      });
                     }}
                   >
                     <td><strong>03</strong></td>
-                    <td>
-                      <div style={{ fontWeight: 700, color: '#0f172a' }}>Mandatory Co-Pay</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Senior Citizen Clause</div>
-                      {activePolicy?.copay.citation?.confidence !== undefined && activePolicy.copay.citation.confidence < 0.85 && (
-                        <span className="confidence-chip-low">⚠️ Review clause</span>
-                      )}
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: 600, color: (activePolicy?.copay.senior_citizen_percentage || 0) > 0 ? '#d97706' : '#16a34a' }}>
-                        {(activePolicy?.copay.senior_citizen_percentage || 0) > 0
-                          ? `${activePolicy?.copay.senior_citizen_percentage}% (Age 61+)`
-                          : '0% Co-Payment'}
-                      </span>
-                    </td>
-                    <td><span style={{ color: '#0b3a72', fontWeight: 700 }}>Pg {activePolicy?.copay.citation?.page_number || 18}</span></td>
+                    <td style={{ fontWeight: 700, color: '#0f172a' }}>Mandatory Co-Pay</td>
                     <td>
                       <span className={`table-status-chip ${(activePolicy?.copay.senior_citizen_percentage || 0) > 0 ? 'chip-amber' : 'chip-green'}`}>
                         {(activePolicy?.copay.senior_citizen_percentage || 0) > 0 ? 'APPLIES' : 'ZERO'}
@@ -769,19 +759,18 @@ export const App: React.FC = () => {
                     className={`${activeCitation?.tag === 'PREAUTH' ? 'active-row' : ''} ${flashingIdx === 3 ? 'autofill-flash' : ''}`}
                     onClick={() => {
                       if (activePolicy?.pre_auth.citation) handleScheduleClick(activePolicy.pre_auth.citation);
+                      setScheduleModalRow({
+                        title: 'Emergency Pre-Auth',
+                        subtitle: 'Intimation Window',
+                        value: `Intimation required within ${activePolicy?.pre_auth.emergency_window_hours || 24} hours of emergency admission`,
+                        page: activePolicy?.pre_auth.citation?.page_number || 27,
+                        status: '24H RULE',
+                        statusClass: 'chip-green',
+                      });
                     }}
                   >
                     <td><strong>04</strong></td>
-                    <td>
-                      <div style={{ fontWeight: 700, color: '#0f172a' }}>Emergency Pre-Auth</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Intimation Window</div>
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
-                        Within {activePolicy?.pre_auth.emergency_window_hours || 24} hours of admission
-                      </span>
-                    </td>
-                    <td><span style={{ color: '#0b3a72', fontWeight: 700 }}>Pg {activePolicy?.pre_auth.citation?.page_number || 27}</span></td>
+                    <td style={{ fontWeight: 700, color: '#0f172a' }}>Emergency Pre-Auth</td>
                     <td><span className="table-status-chip chip-green">24H RULE</span></td>
                   </tr>
 
@@ -791,19 +780,20 @@ export const App: React.FC = () => {
                     onClick={() => {
                       const cit = activePolicy?.all_citations.find(c => c.tag === 'CONSUMABLES' || c.tag === 'EXCLUSIONS') || activePolicy?.all_citations[0];
                       if (cit) handleScheduleClick(cit);
+                      setScheduleModalRow({
+                        title: 'Consumables Rider',
+                        subtitle: 'Gloves, PPE, Syringes (IRDAI List I)',
+                        value: activePolicy?.has_consumables_rider
+                          ? 'Fully Covered with Optional Rider (Zero Deductions)'
+                          : 'Excluded (IRDAI List I non-medical items out-of-pocket)',
+                        page: 34,
+                        status: activePolicy?.has_consumables_rider ? 'COVERED' : 'EXCLUDED',
+                        statusClass: activePolicy?.has_consumables_rider ? 'chip-green' : 'chip-red',
+                      });
                     }}
                   >
                     <td><strong>05</strong></td>
-                    <td>
-                      <div style={{ fontWeight: 700, color: '#0f172a' }}>Consumables Rider</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Gloves, PPE, Syringes</div>
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: 600, color: activePolicy?.has_consumables_rider ? '#16a34a' : '#dc2626' }}>
-                        {activePolicy?.has_consumables_rider ? 'Fully Covered (Plus Rider)' : 'Excluded (List I items unpaid)'}
-                      </span>
-                    </td>
-                    <td><span style={{ color: '#0b3a72', fontWeight: 700 }}>Pg 34</span></td>
+                    <td style={{ fontWeight: 700, color: '#0f172a' }}>Consumables Rider</td>
                     <td>
                       <span className={`table-status-chip ${activePolicy?.has_consumables_rider ? 'chip-green' : 'chip-red'}`}>
                         {activePolicy?.has_consumables_rider ? 'COVERED' : 'EXCLUDED'}
@@ -812,24 +802,49 @@ export const App: React.FC = () => {
                   </tr>
 
                   {/* Row 6: Waiting Periods */}
-                  <tr>
+                  <tr
+                    onClick={() => {
+                      const page = activePolicy?.waiting_periods?.[0]?.page || 10;
+                      setCurrentPage(page);
+                      setScheduleModalRow({
+                        title: 'Waiting Periods',
+                        subtitle: 'Specific Ailment Exclusions',
+                        value: activePolicy?.waiting_periods && activePolicy.waiting_periods.length > 0
+                          ? `${activePolicy.waiting_periods[0].duration} Initial • 24 Mo Joint Replacement / Hernia`
+                          : '30 Days Initial • 24 Months Specific Pre-Existing Conditions',
+                        page: page,
+                        status: 'SCHEDULED',
+                        statusClass: 'chip-green',
+                      });
+                    }}
+                  >
                     <td><strong>06</strong></td>
-                    <td>
-                      <div style={{ fontWeight: 700, color: '#0f172a' }}>Waiting Periods</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Specific Ailment Exclusions</div>
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: 600, color: '#334155' }}>
-                        {activePolicy?.waiting_periods && activePolicy.waiting_periods.length > 0 
-                          ? `${activePolicy.waiting_periods[0].duration} Initial • 24 Mo Joint/Hernia`
-                          : '30 Days Initial • 24 Mo Specific'}
-                      </span>
-                    </td>
-                    <td><span style={{ color: '#0b3a72', fontWeight: 700 }}>Pg {activePolicy?.waiting_periods?.[0]?.page || 10}</span></td>
+                    <td style={{ fontWeight: 700, color: '#0f172a' }}>Waiting Periods</td>
                     <td><span className="table-status-chip chip-green">SCHEDULED</span></td>
                   </tr>
                 </tbody>
               </table>
+
+              {scheduleModalRow && (
+                <div className="caregiver-drawer-overlay" onClick={() => setScheduleModalRow(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div className="glass-panel" onClick={(e) => e.stopPropagation()} style={{ width: '380px', maxWidth: '90vw', padding: '20px', background: '#fff' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>{scheduleModalRow.title}</div>
+                        <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)' }}>{scheduleModalRow.subtitle}</div>
+                      </div>
+                      <button onClick={() => setScheduleModalRow(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                        <X size={18} color="#64748b" />
+                      </button>
+                    </div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', margin: '10px 0' }}>{scheduleModalRow.value}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px' }}>
+                      <span style={{ fontSize: '0.78rem', color: '#0b3a72', fontWeight: 700 }}>Page {scheduleModalRow.page}</span>
+                      <span className={`table-status-chip ${scheduleModalRow.statusClass}`}>{scheduleModalRow.status}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Cashless TPA Network tags */}
@@ -859,8 +874,23 @@ export const App: React.FC = () => {
           </div>
         </section>
 
-        {/* ================= COLUMN 3: LLM INTELLIGENCE & CAREGIVER DECISION CENTER ================= */}
-        <section className="panel">
+        {/* Floating AI Caregiver button (replaces inline Column 3) */}
+        <div className="caregiver-fab-wrap">
+          <span className="caregiver-fab-tooltip">💬 I can advise you</span>
+          <button className="caregiver-fab" onClick={() => setShowCaregiverDrawer(true)}>
+            <Sparkles size={22} color="#fff" />
+          </button>
+        </div>
+
+        {showCaregiverDrawer && (
+          <div className="caregiver-drawer-overlay" onClick={() => setShowCaregiverDrawer(false)}>
+            <div className="caregiver-drawer" onClick={(e) => e.stopPropagation()}>
+              <div className="caregiver-drawer-close">
+                <button onClick={() => setShowCaregiverDrawer(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                  <X size={20} color="#64748b" />
+                </button>
+              </div>
+              <section className="panel" style={{ border: 'none', height: 'auto' }}>
           <div className="panel-header">
             <div className="panel-title">
               <Sparkles size={16} color="#0b3a72" />
@@ -1120,7 +1150,10 @@ export const App: React.FC = () => {
               </div>
             </div>
           </div>
-        </section>
+              </section>
+            </div>
+          </div>
+        )}
 
       </div>
       )}

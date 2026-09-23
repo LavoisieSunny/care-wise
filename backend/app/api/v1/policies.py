@@ -4,6 +4,7 @@ from app.schemas.policy import PolicyDetails, PolicyListResponse, PolicyUploadRe
 from app.schemas.auth import UserOut
 from app.core.security import get_current_user
 from app.services.policy_service import policy_service
+from app.services.report_service import report_service
 from app.core.audit_log import record_event
 
 router = APIRouter()
@@ -21,6 +22,15 @@ async def get_policy(policy_id: str, current_user: UserOut = Depends(get_current
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")
     return policy
+
+@router.get("/policies/{policy_id}/summary", tags=["Policies"])
+async def get_policy_ai_summary(policy_id: str, current_user: UserOut = Depends(get_current_user)):
+    """Get plain-English AI policy summary for quick caregiver understanding."""
+    policy = policy_service.get_policy(policy_id, owner_id=current_user.id)
+    if not policy:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    summary = report_service.generate_ai_summary(policy)
+    return {"policy_id": policy_id, "summary": summary}
 
 @router.post("/policies/upload", response_model=PolicyUploadResponse, tags=["Policies"])
 async def upload_policy_pdf(

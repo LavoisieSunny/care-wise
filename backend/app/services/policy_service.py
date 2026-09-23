@@ -16,6 +16,7 @@ from app.schemas.policy import (
 )
 from app.services.llm_client import llm_client
 from app.core.database import SessionLocal, PolicyRecord, init_db
+from app.core.crypto import encrypt_text, decrypt_text
 
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "sample_policies.json"
 
@@ -52,7 +53,7 @@ class PolicyService:
                 db.add(record)
             record.insurer_name = policy.insurer_name
             record.policy_name = policy.policy_name
-            record.data_json = policy.model_dump_json()
+            record.data_json = encrypt_text(policy.model_dump_json())
             db.commit()
             logger.info(f"Saved policy '{policy.id}' to database.")
         except Exception as e:
@@ -104,7 +105,7 @@ class PolicyService:
             if owner_id:
                 # Show the user's own uploads PLUS the seeded sample policies (owner_id is NULL)
                 query = query.filter((PolicyRecord.owner_id == owner_id) | (PolicyRecord.owner_id.is_(None)))
-            return [PolicyDetails(**json.loads(r.data_json)) for r in query.all()]
+            return [PolicyDetails(**json.loads(decrypt_text(r.data_json))) for r in query.all()]
         finally:
             db.close()
 
@@ -116,7 +117,7 @@ class PolicyService:
                 return None
             if owner_id and record.owner_id and record.owner_id != owner_id:
                 return None  # exists, but belongs to someone else
-            return PolicyDetails(**json.loads(record.data_json))
+            return PolicyDetails(**json.loads(decrypt_text(record.data_json))) if record else None
         finally:
             db.close()
 

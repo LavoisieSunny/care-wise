@@ -12,6 +12,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { PolicyDetails, ClauseCitation } from '../types/policy';
+import { getPolicyAISummary } from '../api/policies';
 
 interface PolicyViewerProps {
   policy: PolicyDetails | null;
@@ -30,6 +31,17 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
 }) => {
   const [selectedTag, setSelectedTag] = useState<string>('ALL');
   const [flashingIdx, setFlashingIdx] = useState<number | null>(null);
+  const [aiSummary, setAiSummary] = useState<string>('');
+  const [summaryLoading, setSummaryLoading] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (!policy) return;
+    setSummaryLoading(true);
+    getPolicyAISummary(policy.id)
+      .then((res) => setAiSummary(res.summary))
+      .catch(() => setAiSummary(''))
+      .finally(() => setSummaryLoading(false));
+  }, [policy?.id]);
 
   // Field-by-field fill animation when policy updates (Phase 3)
   React.useEffect(() => {
@@ -109,6 +121,22 @@ export const PolicyViewer: React.FC<PolicyViewerProps> = ({
           <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Instant OCR & Grounded Chunking</div>
         </div>
       </div>
+
+      {/* AI Plain-English Summary Card */}
+      {(summaryLoading || aiSummary) && (
+        <div className="glass-panel" style={{ padding: '14px 16px', margin: '0 0 14px', borderLeft: '3px solid var(--color-primary)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+            <Sparkles size={14} color="var(--color-primary)" />
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-primary)' }}>AI Summary — What This Means For You</span>
+          </div>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: 1.5, margin: 0 }}>
+            {summaryLoading ? 'Reading your policy...' : aiSummary}
+          </p>
+          <div style={{ marginTop: '8px', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+            AI-assisted analysis. Always confirm final figures with your insurer/TPA before admission.
+          </div>
+        </div>
+      )}
 
       {/* Extracted Metrics Grid */}
       <div className="policy-metrics-grid">

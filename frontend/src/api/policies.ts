@@ -25,3 +25,8 @@ export const uploadPolicyDeep = async (uploadId: string): Promise<PolicyUploadRe
   return res.data;
 };
 
+export const getPolicyAISummary = async (policyId: string): Promise<{ summary: string }> => {
+  const res = await api.get<{ policy_id: string; summary: string }>(`/policies/${policyId}/summary`);
+  return res.data;
+};
+
